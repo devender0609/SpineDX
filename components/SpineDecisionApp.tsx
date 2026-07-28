@@ -23,6 +23,7 @@ const initialCase: CaseInput = {
 };
 
 type Stage = "presentation" | "exam" | "imaging" | "planning";
+const STAGES: Stage[] = ["presentation", "exam", "imaging", "planning"];
 type ResultTab = "assessment" | "management" | "evidence";
 
 function Field({ label, required, help, children }: { label: string; required?: boolean; help?: string; children: ReactNode }) {
@@ -63,6 +64,9 @@ export default function SpineDecisionApp() {
   const statusTone = result?.urgency === "emergency" ? "danger" : result?.urgency === "urgent" ? "warn" : "good";
   const recTone = result?.reconciliation === "concordant" ? "good" : result?.reconciliation === "partially-concordant" ? "info" : result?.reconciliation === "discordant" ? "danger" : "warn";
   const reviewCount = result?.checks.filter(x=>x.status!=="met").length ?? 0;
+  const stageIndex = STAGES.indexOf(stage);
+  const goBack = () => setStage(STAGES[Math.max(0, stageIndex - 1)]);
+  const goNext = () => setStage(STAGES[Math.min(STAGES.length - 1, stageIndex + 1)]);
 
   return <main className="app-shell">
     <header className="topbar">
@@ -74,12 +78,12 @@ export default function SpineDecisionApp() {
 
     {errors.length>0 && <div className="error-summary" role="alert"><strong>Complete the required fields</strong><ul>{errors.map(x=><li key={x}>{x}</li>)}</ul></div>}
 
-    <div className="workspace">
+    <div className={`workspace ${result ? "has-results" : "form-only"}`}>
       <aside className="workflow-nav" aria-label="Clinical workflow">
-        <button className={stage==="presentation"?"active":""} onClick={()=>setStage("presentation")}><span>1</span><div><b>Presentation</b><small>Symptoms and goals</small></div></button>
-        <button className={stage==="exam"?"active":""} onClick={()=>setStage("exam")}><span>2</span><div><b>Examination</b><small>Neurologic and mimics</small></div></button>
-        <button className={stage==="imaging"?"active":""} onClick={()=>setStage("imaging")}><span>3</span><div><b>Imaging</b><small>Level, zone, stability</small></div></button>
-        <button className={stage==="planning"?"active":""} onClick={()=>setStage("planning")}><span>4</span><div><b>Safety & planning</b><small>Red flags, prior care, risk</small></div></button>
+        <button className={`${stage==="presentation"?"active":""} ${stageIndex>0||result?"complete":""}`} onClick={()=>setStage("presentation")}><span>{stageIndex>0||result?"✓":"1"}</span><div><b>Presentation</b><small>Symptoms and goals</small></div></button>
+        <button className={`${stage==="exam"?"active":""} ${stageIndex>1||result?"complete":""}`} onClick={()=>setStage("exam")}><span>{stageIndex>1||result?"✓":"2"}</span><div><b>Examination</b><small>Neurologic and mimics</small></div></button>
+        <button className={`${stage==="imaging"?"active":""} ${stageIndex>2||result?"complete":""}`} onClick={()=>setStage("imaging")}><span>{stageIndex>2||result?"✓":"3"}</span><div><b>Imaging</b><small>Level, zone, stability</small></div></button>
+        <button className={`${stage==="planning"?"active":""} ${result?"complete":""}`} onClick={()=>setStage("planning")}><span>{result?"✓":"4"}</span><div><b>Safety & planning</b><small>Red flags, prior care, risk</small></div></button>
       </aside>
 
       <form className="clinical-form" onSubmit={submit} noValidate>
@@ -154,11 +158,17 @@ export default function SpineDecisionApp() {
           <details className="advanced"><summary>Perioperative risk and optimization</summary><div className="advanced-body"><div className="grid three"><Field label="BMI"><input type="number" min="10" max="80" value={data.bmi} onChange={e=>update("bmi",+e.target.value)}/></Field><Field label="HbA1c"><input type="number" min="3" max="20" step="0.1" value={data.a1c} onChange={e=>update("a1c",+e.target.value)}/></Field><Field label="Frailty"><select value={data.frailty} onChange={e=>update("frailty",e.target.value as CaseInput["frailty"])}><option value="none">None</option><option value="mild">Mild</option><option value="moderate">Moderate</option><option value="severe">Severe</option><option value="unknown">Unknown</option></select></Field><Field label="Bone health"><select value={data.boneHealth} onChange={e=>update("boneHealth",e.target.value as CaseInput["boneHealth"])}><option value="normal">Normal</option><option value="osteopenia">Osteopenia</option><option value="osteoporosis">Osteoporosis</option><option value="unknown">Unknown</option></select></Field></div><div className="check-grid compact"><Check checked={data.smoking} onChange={v=>update("smoking",v)}>Current smoking</Check><Check checked={data.diabetes} onChange={v=>update("diabetes",v)}>Diabetes</Check><Check checked={data.chronicOpioidUse} onChange={v=>update("chronicOpioidUse",v)}>Chronic opioid use</Check><Check checked={data.depressionAnxietyConcern} onChange={v=>update("depressionAnxietyConcern",v)}>Depression or anxiety concern</Check><Check checked={data.anticoagulation} onChange={v=>update("anticoagulation",v)}>Anticoagulation</Check></div></div></details>
         </div>}
 
-        <div className="form-footer"><button className="primary-button" type="submit">Generate clinical synthesis</button><span>Required fields are marked *</span></div>
+        <div className="form-footer wizard-footer">
+          <div className="footer-progress"><strong>Step {stageIndex + 1} of 4</strong><span>{stage === "planning" ? "Review all sections, then generate the final synthesis." : "Complete this section and continue."}</span></div>
+          <div className="footer-actions">
+            {stageIndex > 0 && <button className="secondary-button" type="button" onClick={goBack}>Back</button>}
+            {stage !== "planning" ? <button className="primary-button" type="button" onClick={goNext}>Continue</button> : <button className="primary-button" type="submit">Generate clinical synthesis</button>}
+          </div>
+        </div>
       </form>
 
-      <section className="results" ref={resultsRef} aria-live="polite">
-        {!result ? <div className="empty-state"><div className="empty-icon">✦</div><h2>Clinical synthesis</h2><p>Complete the four-step review and generate a concise, evidence-linked summary.</p><div className="empty-grid"><span>Safety</span><span>Concordance</span><span>Management</span><span>Surgery</span></div></div> : <>
+      {result && <section className="results" ref={resultsRef} aria-live="polite">
+        <>
           <div className="result-header"><div><span className="stage-kicker">Generated {generatedAt}</span><h2>Clinical synthesis</h2></div><div className="result-badges"><Pill tone={statusTone}>{result.urgency.toUpperCase()} PATHWAY</Pill><Pill tone={recTone}>{result.reconciliation.replace("-"," ").toUpperCase()}</Pill></div></div>
           {stale && <div className="stale-note">Inputs changed after generation. Regenerate before using this summary.</div>}
 
@@ -192,8 +202,8 @@ export default function SpineDecisionApp() {
           {resultTab === "evidence" && <div className="result-stack"><Card title="Evidence map" eyebrow="RULE-CATEGORY SUPPORT"><p className="muted">These references support the general rule category. They do not validate this software or create a patient-specific recommendation.</p><div className="evidence-list">{evidence.map(x=><article key={x.id}><div><Pill tone="info">{x.id}</Pill><span>{x.year}</span></div><h3>{x.title}</h3><p>{x.source}</p><small>{x.note}</small></article>)}</div></Card></div>}
 
           <button className="print-button" onClick={()=>window.print()}>Print clinician summary</button>
-        </>}
-      </section>
+        </>
+      </section>}
     </div>
   </main>;
 }

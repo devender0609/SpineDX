@@ -1,4 +1,4 @@
-# SpineDx-Tx Professional v7
+# SpineDx-Tx Professional v8
 
 A physician-facing lumbar clinical reconciliation prototype with a streamlined four-step workflow and a concise, evidence-linked synthesis.
 
@@ -19,3 +19,7 @@ npm install
 npm run build
 npm run dev
 ```
+
+
+## v8 workflow change
+The synthesis action is available only on the final Safety & Planning step. Earlier steps use Back/Continue navigation, and the results panel appears only after a complete four-step submission.
