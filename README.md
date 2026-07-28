@@ -23,3 +23,10 @@ npm run dev
 
 ## v8 workflow change
 The synthesis action is available only on the final Safety & Planning step. Earlier steps use Back/Continue navigation, and the results panel appears only after a complete four-step submission.
+
+## v9 workflow correction
+
+- Loading the example now clears any previously generated synthesis.
+- Opening the final Safety & planning step never generates a synthesis.
+- The final synthesis button remains disabled until the clinician confirms review of the safety screen, prior care, and perioperative risk sections.
+- A synthesis is created only by an explicit form submission after all required fields and final-review confirmations pass validation.

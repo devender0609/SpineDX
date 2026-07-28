@@ -53,12 +53,14 @@ export default function SpineDecisionApp() {
   const [generatedAt, setGeneratedAt] = useState("");
   const [stage, setStage] = useState<Stage>("presentation");
   const [resultTab, setResultTab] = useState<ResultTab>("assessment");
+  const [finalReview, setFinalReview] = useState({ safety: false, priorCare: false, risk: false });
   const resultsRef = useRef<HTMLElement>(null);
   const result = useMemo(()=>snapshot ? evaluateCase(snapshot) : null,[snapshot]);
   const stale = snapshot ? JSON.stringify(data)!==JSON.stringify(snapshot) : false;
   const update = <K extends keyof CaseInput>(key:K,value:CaseInput[K]) => { setData(p=>({...p,[key]:value})); setErrors([]); };
-  const submit=(e:FormEvent)=>{e.preventDefault(); const v=validateCase(data); setErrors(v); if(v.length){scrollTo({top:0,behavior:"smooth"});return;} setSnapshot({...data}); setGeneratedAt(new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})); setResultTab("assessment"); setTimeout(()=>resultsRef.current?.scrollIntoView({behavior:"smooth",block:"start"}),50)};
-  const reset=()=>{setData(initialCase);setSnapshot(null);setErrors([]);setStage("presentation")};
+  const submit=(e:FormEvent)=>{e.preventDefault(); const v=validateCase(data); if (!finalReview.safety) v.push("Confirm that the urgent safety screen has been reviewed."); if (!finalReview.priorCare) v.push("Confirm that prior care and injection details have been reviewed."); if (!finalReview.risk) v.push("Confirm that perioperative risk has been reviewed or marked not applicable."); setErrors(v); if(v.length){scrollTo({top:0,behavior:"smooth"});return;} setSnapshot({...data}); setGeneratedAt(new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})); setResultTab("assessment"); setTimeout(()=>resultsRef.current?.scrollIntoView({behavior:"smooth",block:"start"}),50)};
+  const reset=()=>{setData(initialCase);setSnapshot(null);setErrors([]);setGeneratedAt("");setStage("presentation");setFinalReview({safety:false,priorCare:false,risk:false})};
+  const loadExample=()=>{setData(initialCase);setSnapshot(null);setErrors([]);setGeneratedAt("");setStage("presentation");setFinalReview({safety:false,priorCare:false,risk:false})};
   const evidence = result ? EVIDENCE.filter(x=>result.evidenceIds.includes(x.id)) : [];
 
   const statusTone = result?.urgency === "emergency" ? "danger" : result?.urgency === "urgent" ? "warn" : "good";
@@ -71,7 +73,7 @@ export default function SpineDecisionApp() {
   return <main className="app-shell">
     <header className="topbar">
       <div className="brand"><div className="brand-mark">S</div><div><h1>SpineDx-Tx</h1><p>Clinical reconciliation workspace</p></div></div>
-      <div className="top-actions"><Pill tone="info">Lumbar degenerative scope</Pill><button className="ghost-button" onClick={()=>setData(initialCase)}>Load example</button><button className="ghost-button" onClick={reset}>Reset</button></div>
+      <div className="top-actions"><Pill tone="info">Lumbar degenerative scope</Pill><button className="ghost-button" type="button" onClick={loadExample}>Load example</button><button className="ghost-button" onClick={reset}>Reset</button></div>
     </header>
 
     <div className="disclaimer"><strong>Research prototype.</strong> Supports structured review only. It does not diagnose, authorize, order, or replace clinician image review and judgment. Do not enter identifiable patient information.</div>
@@ -156,13 +158,21 @@ export default function SpineDecisionApp() {
             <div className="check-grid compact"><Check checked={data.completedExerciseProgram} onChange={v=>update("completedExerciseProgram",v)}>Structured exercise-based care completed</Check><Check checked={data.medicationTrial} onChange={v=>update("medicationTrial",v)}>Medication trial documented</Check></div>
           </Card>
           <details className="advanced"><summary>Perioperative risk and optimization</summary><div className="advanced-body"><div className="grid three"><Field label="BMI"><input type="number" min="10" max="80" value={data.bmi} onChange={e=>update("bmi",+e.target.value)}/></Field><Field label="HbA1c"><input type="number" min="3" max="20" step="0.1" value={data.a1c} onChange={e=>update("a1c",+e.target.value)}/></Field><Field label="Frailty"><select value={data.frailty} onChange={e=>update("frailty",e.target.value as CaseInput["frailty"])}><option value="none">None</option><option value="mild">Mild</option><option value="moderate">Moderate</option><option value="severe">Severe</option><option value="unknown">Unknown</option></select></Field><Field label="Bone health"><select value={data.boneHealth} onChange={e=>update("boneHealth",e.target.value as CaseInput["boneHealth"])}><option value="normal">Normal</option><option value="osteopenia">Osteopenia</option><option value="osteoporosis">Osteoporosis</option><option value="unknown">Unknown</option></select></Field></div><div className="check-grid compact"><Check checked={data.smoking} onChange={v=>update("smoking",v)}>Current smoking</Check><Check checked={data.diabetes} onChange={v=>update("diabetes",v)}>Diabetes</Check><Check checked={data.chronicOpioidUse} onChange={v=>update("chronicOpioidUse",v)}>Chronic opioid use</Check><Check checked={data.depressionAnxietyConcern} onChange={v=>update("depressionAnxietyConcern",v)}>Depression or anxiety concern</Check><Check checked={data.anticoagulation} onChange={v=>update("anticoagulation",v)}>Anticoagulation</Check></div></div></details>
+          <Card title="Final review" eyebrow="REQUIRED BEFORE SYNTHESIS" tone="soft">
+            <p className="muted">The synthesis remains unavailable until the final page has been deliberately reviewed. Unchecked red flags mean “not identified,” not “not assessed.”</p>
+            <div className="final-review-grid">
+              <Check checked={finalReview.safety} onChange={v=>setFinalReview(p=>({...p,safety:v}))}>Urgent safety screen reviewed</Check>
+              <Check checked={finalReview.priorCare} onChange={v=>setFinalReview(p=>({...p,priorCare:v}))}>Prior care and injection details reviewed</Check>
+              <Check checked={finalReview.risk} onChange={v=>setFinalReview(p=>({...p,risk:v}))}>Perioperative risk reviewed or not applicable</Check>
+            </div>
+          </Card>
         </div>}
 
         <div className="form-footer wizard-footer">
           <div className="footer-progress"><strong>Step {stageIndex + 1} of 4</strong><span>{stage === "planning" ? "Review all sections, then generate the final synthesis." : "Complete this section and continue."}</span></div>
           <div className="footer-actions">
             {stageIndex > 0 && <button className="secondary-button" type="button" onClick={goBack}>Back</button>}
-            {stage !== "planning" ? <button className="primary-button" type="button" onClick={goNext}>Continue</button> : <button className="primary-button" type="submit">Generate clinical synthesis</button>}
+            {stage !== "planning" ? <button className="primary-button" type="button" onClick={goNext}>Continue</button> : <button className="primary-button" type="submit" disabled={!finalReview.safety || !finalReview.priorCare || !finalReview.risk} title={!finalReview.safety || !finalReview.priorCare || !finalReview.risk ? "Complete the three final-review confirmations before generating." : "Generate clinical synthesis"}>Generate clinical synthesis</button>}
           </div>
         </div>
       </form>
