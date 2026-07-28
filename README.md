@@ -1,81 +1,28 @@
-# SpineDx-Tx AI
+# SpineDx-Tx AI — literature-mapped lumbar decision-support prototype
 
-A deployable Next.js demonstration of physician-controlled clinical decision support for lumbar symptom–imaging concordance and treatment pathway review.
+A Next.js research prototype for structured lumbar safety screening, syndrome characterization, clinical–imaging reconciliation, diagnostic gaps, treatment context, decompression-versus-fusion evidence framing, and perioperative optimization.
 
-## Important limitation
+## Safety
 
-This is an educational prototype. It is not a medical device, does not provide autonomous diagnosis, and has not been clinically validated. Do not enter protected health information into a public deployment.
+This is not a validated medical device. It must not be used for autonomous diagnosis, ordering, surgical selection, authorization, or patient-facing advice. No identifiable patient data should be entered in the public demo.
 
-## Run locally
+## Evidence framework
+
+Rules are explicitly mapped to ACR Low Back Pain Appropriateness Criteria, NICE NG59, the NICE/GIRFT cauda equina pathway, NASS lumbar disc herniation and lumbar stenosis guidelines, the 2024 Nordsten-DS randomized trial, and contemporary hip-spine literature. Evidence mapping does not validate the software.
+
+## Run
 
 ```bash
 npm install
+npm run build
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+## Validation required before clinical use
 
-## Deploy with GitHub and Vercel
-
-1. Create a new GitHub repository.
-2. Upload all files in this project to the repository root.
-3. In Vercel, select **Add New → Project**.
-4. Import the GitHub repository.
-5. Keep the detected framework as **Next.js** and select **Deploy**.
-
-No environment variables or database are required for this demonstration.
-
-## Current functionality
-
-- Structured lumbar case intake
-- Red-flag escalation logic
-- Symptom–imaging side and level concordance
-- Ranked alternative considerations
-- Missing-information detection
-- Treatment pathway display
-- Decompression-versus-fusion support statement
-- Printable clinician summary
-- Fully client-side processing; no entered data are intentionally persisted
-
-## Architecture
-
-- Next.js App Router
-- TypeScript
-- React client component
-- Transparent deterministic rules in `lib/decisionEngine.ts`
-- No external AI API in the MVP
-
-## Recommended next steps before clinical use
-
-1. Replace illustrative rules with an expert-approved knowledge base.
-2. Add authentication, audit logs, role-based access, and a HIPAA-appropriate hosting architecture.
-3. Add formal data definitions and FHIR/DICOM interfaces.
-4. Validate against a blinded multidisciplinary reference panel.
-5. Complete legal, privacy, cybersecurity, clinical governance, and regulatory review.
-6. Keep all recommendations physician-confirmed and version-controlled.
-
-## Clinical logic corrections in this revision
-
-- Foraminal lesions now map to the exiting nerve root (for example, L3-4 foraminal stenosis maps to L3), while disc/lateral-recess lesions map to the traversing root.
-- A normal motor examination is no longer treated as missing information.
-- Bilateral symptoms with unilateral imaging are flagged as incompletely explained.
-- Sustained injection benefit is recognized as a reason to consider continued observation rather than automatically escalating to surgery.
-- Results are generated from a submitted snapshot. Editing the form afterward displays a stale-results warning until the user regenerates the summary.
-- Input validation, clinical checks, clearer red-flag wording, and keyboard focus states were added.
-
-## Clinical evidence basis and limitations (logic version 0.2)
-
-The prototype is aligned with broad principles from NASS lumbar disc herniation and lumbar spinal stenosis guidance, the NICE/GIRFT cauda equina pathway, and randomized evidence comparing decompression alone with decompression plus fusion in degenerative spondylolisthesis. It does not reproduce a guideline, calculate a validated probability, or replace direct image review and clinical judgment.
-
-Important design safeguards:
-- Central canal and multilevel disease are not forced into a single-root concordance score.
-- Absence of a hip abnormality does not increase concordance.
-- Imaging severity and injection response do not establish the pain generator.
-- Fusion is never recommended from a single checkbox or stenosis severity.
-- Emergency features trigger escalation but are not treated as diagnostic by themselves.
-
-Reference sources reviewed for this logic version:
-- North American Spine Society. Diagnosis and Treatment of Lumbar Disc Herniation with Radiculopathy.
-- North American Spine Society. Diagnosis and Treatment of Degenerative Lumbar Spinal Stenosis.
-- NICE/GIRFT. Interactive care pathway for cauda equina syndrome.
-- Nordsten-DS randomized trial, five-year follow-up (BMJ 2024).
+1. Multidisciplinary rule adjudication with a rule-by-rule evidence table.
+2. Retrospective case-vignette validation against blinded expert consensus.
+3. Silent prospective validation on real clinic cases.
+4. Human-factors testing and failure-mode analysis.
+5. Subgroup fairness, calibration, privacy, cybersecurity, and regulatory review.
+6. Controlled clinical-impact evaluation.
