@@ -100,6 +100,9 @@ export type DecisionOutput = {
   nonoperativePathway: string[];
   surgicalDecision: string[];
   fusionAssessment: string;
+  operativeOptions: string[];
+  surgicalPrerequisites: string[];
+  operativeRisks: string[];
   optimization: string[];
   checks: Check[];
   evidenceIds: string[];
@@ -112,7 +115,10 @@ export const EVIDENCE: EvidenceRef[] = [
   { id: "NASS-LDH", title: "Diagnosis and Treatment of Lumbar Disc Herniation with Radiculopathy", source: "North American Spine Society", year: 2012, note: "Diagnosis requires clinical and imaging correlation; no single examination finding is definitive." },
   { id: "NASS-LSS", title: "Diagnosis and Treatment of Degenerative Lumbar Spinal Stenosis", source: "North American Spine Society", year: 2011, note: "Lumbar stenosis is a clinical syndrome and imaging severity alone does not establish symptom causation." },
   { id: "NORDSTEN-5Y", title: "Nordsten-DS five-year randomized trial", source: "BMJ", year: 2024, note: "For many patients with stenosis and degenerative spondylolisthesis, decompression alone was non-inferior to decompression plus fusion; subgroup exceptions may exist." },
-  { id: "HIP-SPINE", title: "Hip-spine syndrome review", source: "JAAOS", year: 2026, note: "Concurrent hip and spine disease requires deliberate identification of the dominant pain generator." },
+  { id: "SPORT-LDH", title: "SPORT lumbar disc herniation trial", source: "JAMA", year: 2006, note: "Both operative and nonoperative groups improved; surgery generally produced faster relief in appropriately selected patients, while crossover limits randomized comparisons." },
+  { id: "SWEDISH-LSS", title: "Swedish Spinal Stenosis Study, five-year results", source: "Bone & Joint Journal", year: 2024, note: "Routine addition of fusion to decompression did not improve five-year disability outcomes in the studied stenosis population." },
+  { id: "CNS-RISK", title: "Preoperative spine surgical risk assessment", source: "CNS/AANS guideline", year: 2021, note: "Diabetes, smoking, and other modifiable risks should be assessed and counseled; BMI evidence is inconsistent and should not be used alone." },
+  { id: "CNS-BONE", title: "Preoperative osteoporosis assessment", source: "CNS/AANS guideline", year: 2021, note: "Patients with suspected osteoporosis undergoing instrumentation should receive bone-health assessment and counseling." },
 ];
 
 const levelRoots: Record<Exclude<CaseInput["imagingLevel"], "multilevel">, { exiting: Root; traversing: Root }> = {
@@ -174,6 +180,9 @@ export function evaluateCase(input: CaseInput): DecisionOutput {
   const diagnosticNextSteps: string[] = [];
   const nonoperativePathway: string[] = [];
   const surgicalDecision: string[] = [];
+  const operativeOptions: string[] = [];
+  const surgicalPrerequisites: string[] = [];
+  const operativeRisks: string[] = [];
   const optimization: string[] = [];
   const evidenceIds = new Set<string>(["NICE-NG59", "NASS-LDH", "NASS-LSS"]);
 
@@ -239,7 +248,7 @@ export function evaluateCase(input: CaseInput): DecisionOutput {
     alternatives.push("Hip pathology or hip-spine syndrome");
     contradictions.push("Groin pain or an abnormal hip examination raises a competing pain generator.");
     diagnosticNextSteps.push("Complete hip range-of-motion/provocative testing and obtain hip imaging or diagnostic injection only when it would change management.");
-    evidenceIds.add("HIP-SPINE");
+    evidenceIds.add("NICE-NG59");
   }
   if (input.pulsesAbnormal || (input.painPattern === "claudication" && !input.sittingRelieves && !input.flexionRelieves)) alternatives.push("Vascular claudication");
   if (input.inflammatoryFeatures) alternatives.push("Inflammatory axial disease");
@@ -263,26 +272,39 @@ export function evaluateCase(input: CaseInput): DecisionOutput {
     if (input.injectionResponse === "not-tried" && input.painPattern === "radicular") nonoperativePathway.push("An epidural or selective injection may be considered for selected patients as a therapeutic trial; it should not be treated as a definitive diagnostic test.");
   }
 
-  const clinicalImagingCoherent = contradictions.filter(x => x.includes("laterality") || x.includes("root") || x.includes("weakness") || x.includes("sensory")).length === 0 && assessable >= 2 && matched / assessable >= 0.5;
-  if (!clinicalImagingCoherent) surgicalDecision.push("Do not use the current fields to finalize a level-specific invasive procedure; reconcile symptoms, objective examination, and direct imaging review first.");
-  if (urgency === "routine" && clinicalImagingCoherent && input.symptomDurationWeeks >= 6 && (input.legPain > input.backPain || input.painPattern === "claudication")) {
-    surgicalDecision.push("A surgical consultation may be reasonable when disabling leg-dominant symptoms persist despite appropriate nonoperative care and a surgically remediable lesion is clinically concordant.");
+  const localizationContradiction = contradictions.some(x => /laterality|usual exiting|weakness pattern|sensory distribution/.test(x));
+  const clinicalImagingCoherent = !localizationContradiction && assessable >= 2 && matched / assessable >= 0.5;
+  if (!clinicalImagingCoherent) surgicalDecision.push("Do not finalize a level-specific invasive procedure from the current fields; reconcile symptom distribution, objective examination, and direct image review first.");
+  if (input.progressiveWeakness) {
+    surgicalDecision.push("Progressive objective weakness warrants expedited spine-surgeon assessment. When a surgically remediable compressive lesion is concordant, decompression may be time-sensitive and should not be delayed solely to complete an arbitrary duration of nonoperative care.");
+  } else if (urgency === "routine" && clinicalImagingCoherent && input.symptomDurationWeeks >= 6 && (input.legPain > input.backPain || input.painPattern === "claudication")) {
+    surgicalDecision.push("Elective surgical consultation is reasonable when function-limiting leg symptoms persist despite appropriate care and direct image review confirms a concordant surgically remediable lesion.");
   }
-  if (input.painPattern === "axial") surgicalDecision.push("Predominantly axial pain alone should not be attributed to stenosis or used as a stand-alone indication for decompression from this tool.");
+  if (input.painPattern === "axial") surgicalDecision.push("Predominantly axial pain alone is nonspecific and should not be used as a stand-alone indication for decompression. Fusion for isolated low-back pain is outside this prototype and requires diagnosis-specific evaluation.");
+
+  surgicalPrerequisites.push("Direct clinician review of the actual MRI/CT images, not the radiology report alone.");
+  surgicalPrerequisites.push("Documented concordance among symptoms, side, level/zone, and objective neurologic or claudication findings.");
+  surgicalPrerequisites.push("A patient-centered discussion of expected benefit, uncertainty, alternatives, recovery, and the possibility of persistent back or leg symptoms.");
+  if (input.imagingFinding === "disc") { operativeOptions.push("For concordant persistent radiculopathy from a focal lumbar disc herniation, limited discectomy/microdiscectomy may be considered; expected benefit is primarily faster leg-pain relief rather than guaranteed back-pain resolution."); evidenceIds.add("SPORT-LDH"); }
+  if (input.imagingFinding === "lateral-recess" || input.imagingFinding === "central-stenosis") operativeOptions.push("For concordant symptomatic stenosis, nerve-preserving decompression (laminotomy/laminectomy with lateral-recess decompression as needed) is the core operative concept; approach and extent depend on levels and anatomy.");
+  if (input.imagingFinding === "foraminal" || input.imagingFinding === "extraforaminal") operativeOptions.push("For concordant foraminal/extraforaminal compression, targeted foraminotomy or decompression may be considered; fusion is not automatic and depends on collapse, instability, deformity, and the facet resection required.");
+  if (input.imagingLevel === "multilevel") operativeOptions.push("Multilevel surgery requires level-by-level justification; do not decompress every radiographically abnormal level without clinical correlation.");
+  operativeRisks.push("Discuss dural tear, nerve injury, infection, hematoma, venous thromboembolism, medical complications, persistent or recurrent symptoms, and reoperation; risk varies by procedure and patient factors.");
+  if (input.priorLumbarSurgery) operativeRisks.push("Revision surgery may have higher technical complexity and risk, including scar-related dural injury; obtain prior operative details and assess recurrent versus adjacent pathology.");
 
   let fusionAssessment = "The form does not establish an indication for fusion. Operative choice requires diagnosis-specific review of instability, slip morphology, foraminal collapse, deformity, prior surgery, planned facet removal, bone quality, and patient risk.";
   if (input.spondylolisthesis) {
     evidenceIds.add("NORDSTEN-5Y");
-    if (input.dynamicInstability === "absent" && !input.deformityPresent && input.plannedFacetResection !== "substantial") fusionAssessment = "For many patients with stenosis and low-grade degenerative spondylolisthesis without a compelling instability/deformity mechanism, randomized evidence supports considering decompression alone. This does not exclude fusion for selected anatomy or surgical circumstances.";
+    if (input.dynamicInstability === "absent" && !input.deformityPresent && input.plannedFacetResection !== "substantial") { fusionAssessment = "For many patients with stenosis and degenerative spondylolisthesis without a compelling instability, deformity, severe foraminal-collapse, or expected iatrogenic-instability mechanism, randomized trials support decompression alone as a reasonable option. This does not exclude fusion for selected anatomy or revision circumstances."; evidenceIds.add("SWEDISH-LSS"); }
     else if (input.dynamicInstability === "present" || input.deformityPresent || input.plannedFacetResection === "substantial") fusionAssessment = "Fusion may be considered when a clinically meaningful instability/deformity mechanism or expected iatrogenic instability is present, but no single translation or angular threshold should be used as an automatic indication.";
     else missing.push("Clarify slip grade/morphology, standing and dynamic imaging, foraminal collapse, deformity, and expected facet resection before discussing fusion.");
   }
 
-  if (input.smoking) optimization.push("Smoking is a modifiable risk relevant to wound healing and fusion success; document cessation counseling when surgery is considered.");
-  if (input.diabetes && input.a1c >= 8) optimization.push("Glycemic control may increase perioperative risk; coordinate optimization rather than using a universal HbA1c cutoff in isolation.");
+  if (input.smoking) { evidenceIds.add("CNS-RISK"); optimization.push("Smoking is a modifiable risk relevant to wound healing and fusion success; document cessation counseling when surgery is considered."); }
+  if (input.diabetes && input.a1c >= 7.5) { evidenceIds.add("CNS-RISK"); optimization.push("Glycemic control may increase perioperative risk; coordinate optimization rather than using a universal HbA1c cutoff in isolation."); }
   if (input.bmi >= 35) optimization.push("Obesity may increase perioperative complexity and complication risk; discuss individualized risk and optimization without using BMI alone to deny care.");
   if (input.frailty === "moderate" || input.frailty === "severe") optimization.push("Frailty warrants formal perioperative risk assessment, discharge planning, and shared decision-making.");
-  if (input.boneHealth === "unknown" && (input.age >= 65 || input.osteoporosisRisk || input.spondylolisthesis)) optimization.push("Assess bone health when instrumentation is being considered; use DXA and/or opportunistic CT assessment according to local practice.");
+  if (input.boneHealth === "unknown" && (input.age >= 65 || input.osteoporosisRisk || input.spondylolisthesis)) optimization.push("Assess bone health when instrumentation is being considered; use DXA, opportunistic CT, and/or vitamin D assessment according to local practice."); evidenceIds.add("CNS-BONE");
   if (input.boneHealth === "osteoporosis") optimization.push("Osteoporosis requires bone-health optimization and may alter fixation strategy and risk counseling.");
   if (input.chronicOpioidUse) optimization.push("Document baseline opioid exposure and create a perioperative analgesia/taper plan.");
   if (input.depressionAnxietyConcern) optimization.push("Psychological distress can affect recovery and should be assessed and treated without implying that symptoms are non-organic.");
@@ -313,5 +335,5 @@ export function evaluateCase(input: CaseInput): DecisionOutput {
     { label: "Surgical optimization assessed", status: optimization.length ? "review" : "met", rationale: "Modifiable risk and bone health should be addressed when surgery is considered." },
   ];
 
-  return { urgency, urgencyReason, syndrome, reconciliation, reconciliationNarrative, support, contradictions, missing, alternatives: [...new Set(alternatives)], diagnosticNextSteps: [...new Set(diagnosticNextSteps)], nonoperativePathway, surgicalDecision, fusionAssessment, optimization, checks, evidenceIds: [...evidenceIds] };
+  return { urgency, urgencyReason, syndrome, reconciliation, reconciliationNarrative, support, contradictions, missing, alternatives: [...new Set(alternatives)], diagnosticNextSteps: [...new Set(diagnosticNextSteps)], nonoperativePathway, surgicalDecision, fusionAssessment, operativeOptions: [...new Set(operativeOptions)], surgicalPrerequisites: [...new Set(surgicalPrerequisites)], operativeRisks: [...new Set(operativeRisks)], optimization, checks, evidenceIds: [...evidenceIds] };
 }

@@ -113,6 +113,9 @@ export default function SpineDecisionApp() {
           <ResultSection title="Diagnostic next steps" items={result.diagnosticNextSteps} empty="No additional test is automatically recommended. Order testing only when it is expected to change management."/>
           <ResultSection title="Nonoperative pathway context" items={result.nonoperativePathway} empty="No routine nonoperative recommendation was generated because the case requires escalation or clarification."/>
           <ResultSection title="Surgical decision context" items={result.surgicalDecision} empty="The entered information does not establish a surgical indication."/>
+          <ResultSection title="Potential operative strategies" items={result.operativeOptions} empty="No procedure-specific option can be responsibly generated from the entered pathology."/>
+          <ResultSection title="Prerequisites before operative planning" items={result.surgicalPrerequisites} empty="Direct specialist review remains required."/>
+          <ResultSection title="Operative risks to discuss" items={result.operativeRisks} empty="Procedure-specific risks require surgeon review."/>
           <Section title="Decompression versus fusion"><div className="fusion"><p>{result.fusionAssessment}</p></div></Section>
           <ResultSection title="Risk and optimization" items={result.optimization} empty="No optimization flag was triggered by the entered fields; this is not a complete perioperative assessment."/>
           <Section title="Evidence map"><div className="evidence-list">{evidence.map(e=><article key={e.id}><b>{e.id}</b><strong>{e.title}</strong><span>{e.source}, {e.year}</span><p>{e.note}</p></article>)}</div><small>Evidence references support the general rule category; they do not validate this software or make a patient-specific recommendation.</small></Section>
@@ -120,7 +123,7 @@ export default function SpineDecisionApp() {
         </>}
       </aside>
     </div>
-    <footer><strong>Logic version 0.5.</strong> Literature-mapped, transparent rules for research prototyping only. A multidisciplinary panel must approve every rule and perform retrospective, silent prospective, and impact validation before clinical deployment.</footer>
+    <footer><strong>Logic version 0.6.</strong> Clinically audited, evidence-mapped transparent rules for research prototyping only. A multidisciplinary panel must approve every rule and perform retrospective, silent prospective, and impact validation before clinical deployment.</footer>
   </main>
 }
 
