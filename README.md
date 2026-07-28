@@ -1,3 +1,7 @@
+# SpineDx-Tx AI Professional v10
+
+This revision improves final-step usability. The Generate clinical synthesis button remains visibly clickable. Clicking it performs required-field and final-review validation; missing confirmations are shown as actionable errors rather than hiding the reason behind a disabled button.
+
 # SpineDx-Tx Professional v8
 
 A physician-facing lumbar clinical reconciliation prototype with a streamlined four-step workflow and a concise, evidence-linked synthesis.

@@ -24,3 +24,5 @@
   box-shadow: none;
   transform: none;
 }
+
+.review-status{margin:12px 0 4px;padding:10px 12px;border:1px solid #c9d8f2;background:#f5f8ff;color:#34558a;border-radius:10px;font-size:12px;font-weight:700}.primary-button:focus-visible{outline:3px solid rgba(47,100,219,.28);outline-offset:3px}.primary-button:hover{filter:brightness(1.03);transform:translateY(-1px)}
