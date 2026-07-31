@@ -58,3 +58,7 @@ Adds the 23-point clinical validation framework described in docs/V15_IMPLEMENTA
 ## Version 17 guided layout
 
 The assessment is now a five-step guided workflow. Only one focused clinical section is displayed at a time, with a compact stepper, Previous/Continue controls, and the existing separate full-width synthesis. This reduces visual overload without removing clinical fields or validation outputs.
+
+
+## v19 synthetic model
+The research tab includes Synthetic-Rule Surrogate 3.0 trained on 300,000 synthetic records with expanded patient, comorbidity, prior-surgery, procedure, and risk-factor variables. See docs/SURROGATE_MODEL_CARD_V19.md. Outputs are not clinical probabilities.
