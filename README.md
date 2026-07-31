@@ -1,3 +1,5 @@
+# SpineDx-Tx v22 — Engine Correction and Executable Testing
+
 # SpineDx-Tx v20.0.0 — Research-Readiness Build
 
 This build separates the transparent deterministic clinical reconciliation engine from the optional synthetic rule-emulation experiment. It is a research prototype and is not clinically validated.

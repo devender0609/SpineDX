@@ -1,0 +1,29 @@
+import assert from "node:assert/strict";
+import { evaluateCase } from "../lib/decisionEngine.ts";
+import { createBlankCaseFromTemplate } from "../lib/caseFactory.ts";
+
+const levels=["L1-2","L2-3","L3-4","L4-5","L5-S1"];
+const blankMatrix=levels.map(level=>({level,central:"not-graded",rightRecess:"not-graded",leftRecess:"not-graded",rightForamen:"not-graded",leftForamen:"not-graded",discMorphology:"none",migration:"none",synovialCyst:false,rootDeformation:false,priorDecompression:false}));
+const positiveTemplate={
+  age:66,symptomDurationWeeks:32,onset:"chronic",side:"right",painPattern:"radicular",suspectedRoot:"L5",backPain:4,legPain:8,walkingLimitMeters:150,standingProvokes:true,sittingRelieves:true,flexionRelieves:true,coughSneezeProvokes:true,nightRestPain:true,groinPain:true,patientGoal:"demo",mostImportantSymptom:"leg-pain",desiredActivity:"demo",treatmentPreference:"surgery-open",riskTolerance:"high",workDemand:"heavy",homeSupport:"adequate",odi:42,promisPhysicalFunction:38,promisPainInterference:62,depressionTScore:50,zcqSeverity:3,
+  rightHipFlexion:"4",leftHipFlexion:"4",rightKneeExtension:"4",leftKneeExtension:"4",rightAnkleDorsiflexion:"4",leftAnkleDorsiflexion:"4",rightGreatToeExtension:"4",leftGreatToeExtension:"4",rightPlantarFlexion:"4",leftPlantarFlexion:"4",weaknessQuality:"true",weaknessTrajectory:"progressive",weaknessDurationDays:5,muscleAtrophy:true,examConfidence:"high",rightPatellarReflex:"absent",leftPatellarReflex:"absent",rightAchillesReflex:"absent",leftAchillesReflex:"absent",rightSensoryRoot:"L5",leftSensoryRoot:"L5",sensoryRoot:"L5",straightLegRaise:"positive",femoralStretch:"positive",gaitAbnormal:true,heelWalkAbnormal:true,toeWalkAbnormal:true,repeatedHeelRaiseAbnormal:true,hipExamAbnormal:true,pulsesAbnormal:true,neuropathyFeatures:true,standingProvocationPattern:"both",reliefPattern:"sitting",bicycleToleranceBetter:true,uphillBetter:true,legHeaviness:true,
+  imagingAgeMonths:2,actualImagesReviewed:true,imageQuality:"adequate",levelByLevelDocumented:true,imagingMatrix:blankMatrix,imagingLevel:"L4-5",imagingSide:"right",imagingFinding:"lateral-recess",stenosisSeverity:"severe",migratedDisc:true,spondylolisthesis:true,slipMillimeters:4,slipType:"degenerative",dynamicInstability:"present",translationMillimeters:4,angularMotionDegrees:10,deformityPresent:true,coronalCobbDegrees:25,lateralListhesisMillimeters:5,segmentalKyphosisDegrees:5,sagittalImbalancePresent:true,foraminalCollapse:"present",priorLumbarSurgery:true,priorLongFusion:true,plannedFacetResection:"substantial",
+  completedExerciseProgram:true,exerciseWeeks:12,medicationTrial:true,injectionResponse:"sustained",injectionLevel:"L4-5",injectionSide:"right",injectionDurationDays:30,injectionType:"transforaminal",injectionImmediateReliefPercent:100,injectionDelayedReliefPercent:100,injectionFunctionImproved:true,
+  progressiveWeakness:true,urinaryRetention:true,urinarySensationLoss:true,urinaryInitiationDifficulty:true,overflowIncontinence:true,progressiveWeaknessStatus:"present",urinaryRetentionStatus:"present",urinarySensationLossStatus:"present",urinaryInitiationDifficultyStatus:"present",overflowIncontinenceStatus:"present",urgencyAlone:true,saddleAnesthesia:true,bilateralSevereDeficit:true,saddleAnesthesiaStatus:"present",bilateralSevereDeficitStatus:"present",feverStatus:"present",cancerWarningStatus:"present",traumaWarningStatus:"present",reducedAnalTone:"reduced",postVoidResidualMl:500,fever:true,bacteremiaOrRecentInfection:true,immunosuppression:true,recentProcedure:true,cancerHistory:true,unexplainedWeightLoss:true,recentTrauma:true,osteoporosisRisk:true,chronicSteroidUse:true,inflammatoryFeatures:true,
+  smoking:true,smokingStatus:"current",cigarettesPerDay:20,packYears:30,quitDate:"",vapingNicotine:true,smokelessTobacco:true,nicotineReplacement:true,diabetes:true,diabetesType:"type-2",a1c:9,a1cDate:"",insulinUse:true,bmi:40,frailty:"severe",clinicalFrailtyScale:7,boneHealth:"osteoporosis",priorFragilityFracture:true,dexLowestTScore:-3,vitaminD:10,boneMedication:"none",chronicOpioidUse:true,opioidMmed:90,opioidDurationMonths:12,benzodiazepineUse:true,depressionAnxietyConcern:true,phq9:20,gad7:18,anticoagulation:true,anticoagulantName:"x",priorDvtPe:true,anemia:true,hemoglobin:10,albumin:2.8,recentWeightLoss:true,hypertension:true,coronaryDisease:true,heartFailure:true,arrhythmia:true,copd:true,sleepApnea:true,cpapUse:false,kidneyDiseaseStage:"4",liverDisease:true,cardiopulmonaryDisease:true,priorSurgeryType:"multiple",priorSurgeryLevels:"L4-5",priorSurgeryDate:"",sameLevelRevision:true,priorDuralTear:true,priorInfection:true,priorPseudarthrosis:true,hardwareFailure:true,plannedProcedure:"fusion",sexAtBirth:"male",plannedLevels:4,plannedApproach:"posterior",plannedRevision:true,plannedSetting:"inpatient",
+  pediatric:false,pregnant:false,cervicalThoracicSymptoms:false,neuromuscularDisease:false,tumorKnown:false,infectionKnown:false,acuteFractureKnown:false,clinicianAgreement:"agree",overrideReasonCategory:"other",overrideReason:"demo",finalClinicalDecision:"demo"
+};
+const blank=createBlankCaseFromTemplate(positiveTemplate,blankMatrix);
+assert.equal(blank.heelWalkAbnormal,false);
+assert.equal(blank.injectionFunctionImproved,false);
+assert.equal(blank.progressiveWeaknessStatus,"not-assessed");
+assert.equal(blank.rightAnkleDorsiflexion,"not-tested");
+assert.equal(blank.patientGoal,"");
+const blankResult=evaluateCase(blank);
+assert.equal(blankResult.neurologicSeverity,"indeterminate");
+assert.match(blankResult.urgencyReason,/incomplete/i);
+const retention={...blank,urinaryRetentionStatus:"present"};
+assert.equal(evaluateCase(retention).urgency,"emergency");
+const progressive={...blank,progressiveWeaknessStatus:"present"};
+assert.equal(evaluateCase(progressive).urgency,"urgent");
+console.log("v22 engine tests passed");
