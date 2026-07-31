@@ -71,14 +71,14 @@ export function runSyntheticAnalogModel(
   const safeCohortSize = Math.max(10_000, Math.min(1_000_000, Math.floor(cohortSize)));
   const rng = mulberry32(hashCase(input) ^ safeCohortSize);
 
-  const indexUrgent = decision.urgency !== "routine" || input.progressiveWeakness;
+  const indexUrgent = decision.urgency !== "routine" || input.progressiveWeaknessStatus === "present";
   const indexConcordant = decision.reconciliation === "concordant";
   const indexPartial = decision.reconciliation === "partially-concordant";
   const indexDiscordant = decision.reconciliation === "discordant" || decision.reconciliation === "insufficient";
   const indexRadicular = input.painPattern === "radicular" || input.painPattern === "mixed";
   const indexClaudication = input.painPattern === "claudication";
   const indexDeficit = objectiveDeficit(input);
-  const indexPersistent = input.symptomDurationWeeks >= 6;
+  const indexPersistent = input.symptomDurationWeeks !== null && input.symptomDurationWeeks >= 6;
   const indexCareTried = input.completedExerciseProgram || input.medicationTrial || input.injectionResponse !== "not-tried";
   const indexRemediable = ["disc", "central-stenosis", "lateral-recess", "foraminal", "extraforaminal"].includes(input.imagingFinding);
   const indexInstability = input.dynamicInstability === "present" || input.deformityPresent || input.priorLumbarSurgery || input.plannedFacetResection === "substantial";
