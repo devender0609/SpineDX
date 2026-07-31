@@ -53,3 +53,8 @@ Adds the 23-point clinical validation framework described in docs/V15_IMPLEMENTA
 - Qualitative target concordance in the primary report
 - Numerical reconciliation scores moved into expandable technical details
 - Edit inputs action returns to the assessment without losing entered data
+
+
+## Version 17 guided layout
+
+The assessment is now a five-step guided workflow. Only one focused clinical section is displayed at a time, with a compact stepper, Previous/Continue controls, and the existing separate full-width synthesis. This reduces visual overload without removing clinical fields or validation outputs.
