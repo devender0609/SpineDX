@@ -1,3 +1,9 @@
+# SpineDx-Tx v20.0.0 — Research-Readiness Build
+
+This build separates the transparent deterministic clinical reconciliation engine from the optional synthetic rule-emulation experiment. It is a research prototype and is not clinically validated.
+
+See `docs/V20_RESEARCH_READINESS.md` and `docs/OUTCOME_DEFINITIONS.md`.
+
 # SpineDx-Tx Clinical Framework v13
 
 Research prototype for structured lumbar clinical–imaging reconciliation.
