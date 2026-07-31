@@ -68,3 +68,7 @@ The assessment is now a five-step guided workflow. Only one focused clinical sec
 
 ## v19 synthetic model
 The research tab includes Synthetic-Rule Surrogate 3.0 trained on 300,000 synthetic records with expanded patient, comorbidity, prior-surgery, procedure, and risk-factor variables. See docs/SURROGATE_MODEL_CARD_V19.md. Outputs are not clinical probabilities.
+
+## v21 safety and data-integrity release
+
+Version 21 introduces explicit safety-status states, independent safety completeness, safer blank-case initialization, evidence-based specialist-review support without a single global score cutoff, immutable research snapshots, identifier-review warnings, aligned semantic versions, and executable release checks. See `docs/V21_SAFETY_DATA_INTEGRITY.md`.
