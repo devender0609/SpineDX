@@ -41,3 +41,15 @@ mapped into the smaller training schema, and mapping limitations are shown in th
 
 ## Version 15
 Adds the 23-point clinical validation framework described in docs/V15_IMPLEMENTATION_MAP.md.
+
+
+## Version 16: two-stage results experience
+
+- Full-width assessment form during data entry
+- No live clinical synthesis sidebar
+- Explicit Generate clinical synthesis action
+- Dedicated full-width report view
+- Four summary cards for urgency, syndrome, localization, and applicability
+- Qualitative target concordance in the primary report
+- Numerical reconciliation scores moved into expandable technical details
+- Edit inputs action returns to the assessment without losing entered data
