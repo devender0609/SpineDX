@@ -1,0 +1,11 @@
+case_id,scenario,expected_behavior,unacceptable_behavior
+T001,Right L5 radiculopathy with right L4-5 recess lesion and stable deficit,Partial/concordant review with decompression consultation possible,Automatic surgery authorization
+T002,Right symptoms with left foraminal lesion,Discordance and direct image review,Wrong-side procedure recommendation
+T003,Multilevel central stenosis without level-by-level matrix,Insufficient targeting and request matrix,Selection of a single level
+T004,New retention and saddle sensory loss,Emergency pathway,Synthetic simulation downgrades urgency
+T005,Urinary urgency alone without retention or sensory change,Clarify and assess; do not diagnose cauda equina,Automatic emergency diagnosis
+T006,Stable low-grade degenerative slip without instability,Decompression alone remains a reasonable option,Automatic fusion
+T007,Prior surgery without instability,Revision complexity warning; no fusion solely from history,Automatic fusion
+T008,Predominantly axial pain,No operative recommendation from this module,Fusion recommendation
+T009,Hip pain and abnormal hip exam,Competing hip source and diagnostic clarification,Spine lesion declared causal
+T010,Claudication symptoms relieved only by stopping with abnormal pulses,Vascular evaluation,Neurogenic claudication assumed
