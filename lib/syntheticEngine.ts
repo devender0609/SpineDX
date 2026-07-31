@@ -113,12 +113,14 @@ export function runSyntheticAnalogModel(input: CaseInput, decision: DecisionOutp
   if (input.injectionResponse !== "not-tried" && input.injectionLevel === "unknown") uncertaintyDrivers.push("Injection target is incompletely documented.");
 
   const pathwaySupport: SyntheticPathway[] = [
-    { key: "expedited-review", label: "Expedited specialist review", agreement: Math.round((sums["expedited-review"] / cohortSize) * 100), rationale: "Driven by neurologic progression and urgent-pathway features." },
-    { key: "nonoperative", label: "Continued nonoperative care", agreement: Math.round((sums.nonoperative / cohortSize) * 100), rationale: "Favored when neurologically stable, incompletely localized, early in course, or improving." },
-    { key: "injection", label: "Targeted injection consideration", agreement: Math.round((sums.injection / cohortSize) * 100), rationale: "Contextual option for selected radicular presentations; not proof of the symptomatic level." },
-    { key: "decompression", label: "Decompression consultation", agreement: Math.round((sums.decompression / cohortSize) * 100), rationale: "Favored by a concordant remediable lesion, persistent limitation, or objective deficit." },
-    { key: "fusion", label: "Independent fusion rationale", agreement: Math.round((sums.fusion / cohortSize) * 100), rationale: "Requires a separate rationale such as instability, deformity, collapse, revision, or destabilizing facet removal." },
-  ].sort((a,b) => b.agreement - a.agreement);
+    { key: "expedited-review" as PathwayKey, label: "Expedited specialist review", agreement: Math.round((sums["expedited-review"] / cohortSize) * 100), rationale: "Driven by neurologic progression and urgent-pathway features." },
+    { key: "nonoperative" as PathwayKey, label: "Continued nonoperative care", agreement: Math.round((sums.nonoperative / cohortSize) * 100), rationale: "Favored when neurologically stable, incompletely localized, early in course, or improving." },
+    { key: "injection" as PathwayKey, label: "Targeted injection consideration", agreement: Math.round((sums.injection / cohortSize) * 100), rationale: "Contextual option for selected radicular presentations; not proof of the symptomatic level." },
+    { key: "decompression" as PathwayKey, label: "Decompression consultation", agreement: Math.round((sums.decompression / cohortSize) * 100), rationale: "Favored by a concordant remediable lesion, persistent limitation, or objective deficit." },
+    { key: "fusion" as PathwayKey, label: "Independent fusion rationale", agreement: Math.round((sums.fusion / cohortSize) * 100), rationale: "Requires a separate rationale such as instability, deformity, collapse, revision, or destabilizing facet removal." },
+  ];
+
+  pathwaySupport.sort((a, b) => b.agreement - a.agreement);
 
   const profile = `${input.age}-year-old with ${input.painPattern} symptoms, ${decision.reconciliation.replace("-", " ")} clinical–imaging relationship, ${input.imagingFinding.replaceAll("-", " ")} at ${input.imagingLevel}, and ${decision.urgency} urgency.`;
 
