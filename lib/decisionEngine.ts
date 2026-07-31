@@ -1,5 +1,5 @@
 export type Laterality = "right" | "left" | "bilateral" | "midline";
-export type Root = "L2" | "L3" | "L4" | "L5" | "S1";
+export type Root = "L1" | "L2" | "L3" | "L4" | "L5" | "S1";
 export type MotorGrade = "5" | "4" | "3" | "2" | "1" | "0" | "not-tested";
 export type Reflex = "normal" | "reduced" | "absent" | "brisk" | "not-tested";
 
@@ -122,7 +122,7 @@ export const EVIDENCE: EvidenceRef[] = [
 ];
 
 const levelRoots: Record<Exclude<CaseInput["imagingLevel"], "multilevel">, { exiting: Root; traversing: Root }> = {
-  "L1-2": { exiting: "L1" as Root, traversing: "L2" },
+  "L1-2": { exiting: "L1", traversing: "L2" },
   "L2-3": { exiting: "L2", traversing: "L3" },
   "L3-4": { exiting: "L3", traversing: "L4" },
   "L4-5": { exiting: "L4", traversing: "L5" },

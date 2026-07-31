@@ -1,17 +1,22 @@
-# SpineDx-Tx Hybrid AI v11
+# SpineDx-Tx Hybrid AI v12 — 300,000 Synthetic Analogs
 
-A physician-facing lumbar degenerative clinical reconciliation research prototype combining:
+This research prototype combines a literature-mapped safety/rules engine with a deterministic synthetic analog simulation.
 
-1. Transparent safety and literature-mapped rules
-2. A deterministic synthetic analog simulation
-3. Clinician-reviewable rationale and uncertainty
-4. A concise generated synthesis
+## What changed in v12
 
-## Important scientific limitation
+- Default synthetic cohort increased from 5,000 to **300,000 patient-level analog scenarios**.
+- Replaced simple score jitter with patient-level phenotype simulation.
+- Added cohort composition checks for urgency, concordance, objective deficit, and instability.
+- Renamed misleading "confidence" and "closest profile" labels.
+- Added explicit simulation audit checks and a model version.
+- Added L1 to the root type so L1–2 foraminal/extraforaminal anatomy is represented correctly.
+- Retained safety-rule precedence and disabled outcome probabilities.
 
-The synthetic module is not trained or calibrated on real patient outcomes. Its percentages represent agreement across simulated scenarios created from transparent assumptions; they are not outcome probabilities, causal treatment effects, or validated recommendations. Outcome prediction is intentionally disabled until real-data calibration and external validation are completed.
+## Scientific limitation
 
-## Run
+The 300,000 analogs are generated from transparent assumptions. They are not real patients, do not contain observed treatment outcomes, and do not validate the application. Increasing the simulated cohort reduces Monte Carlo noise but cannot reduce bias in the assumptions.
+
+## Local build
 
 ```bash
 npm install
@@ -19,19 +24,6 @@ npm run build
 npm run dev
 ```
 
-## Architecture
+## Deployment
 
-- `lib/decisionEngine.ts`: safety, anatomy, guideline and management logic
-- `lib/syntheticEngine.ts`: deterministic Monte Carlo analog simulation
-- `components/SpineDecisionApp.tsx`: guided workflow and result views
-
-## Validation roadmap
-
-1. Multidisciplinary rule adjudication
-2. Synthetic stress testing and impossible-case testing
-3. Retrospective institutional calibration
-4. Temporal and external validation
-5. Silent prospective evaluation
-6. Clinical-impact trial
-
-Do not enter identifiable patient information. Not for autonomous diagnosis, ordering, authorization, or surgical selection.
+Copy the project contents into the permanent GitHub repository root, run the production build, then commit and push.
