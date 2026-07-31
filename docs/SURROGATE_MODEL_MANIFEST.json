@@ -1,0 +1,15 @@
+{
+  "model_name": "SpineDx conservative synthetic-rule surrogate v2",
+  "source_records": 300000,
+  "final_training_records": 240000,
+  "fixed_holdout_records": 60000,
+  "evaluation": "5 repeated stratified 80/20 holdout splits",
+  "algorithm": "capacity-limited class-weighted decision tree",
+  "max_depth": 4,
+  "minimum_leaf_size": 500,
+  "excluded_near_direct_features": [
+    "urgency",
+    "clinical_imaging_concordance"
+  ],
+  "critical_limitation": "Targets remain deterministic synthetic rule labels. Lower and less precise performance reflects constrained model capacity and split variation, not real-world clinical uncertainty."
+}

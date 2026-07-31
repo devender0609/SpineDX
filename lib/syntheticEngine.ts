@@ -42,7 +42,7 @@ function clamp(v: number, lo = 0, hi = 1) { return Math.max(lo, Math.min(hi, v))
 function bernoulli(rng: () => number, p: number) { return rng() < clamp(p); }
 
 function objectiveDeficit(input: CaseInput) {
-  const weak = [input.hipFlexion, input.kneeExtension, input.ankleDorsiflexion, input.greatToeExtension, input.plantarFlexion]
+  const weak = [input.rightHipFlexion,input.leftHipFlexion,input.rightKneeExtension,input.leftKneeExtension,input.rightAnkleDorsiflexion,input.leftAnkleDorsiflexion,input.rightGreatToeExtension,input.leftGreatToeExtension,input.rightPlantarFlexion,input.leftPlantarFlexion]
     .some(g => g !== "5" && g !== "not-tested");
   return weak || input.gaitAbnormal;
 }

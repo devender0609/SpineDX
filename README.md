@@ -1,29 +1,39 @@
-# SpineDx-Tx Hybrid AI v12 — 300,000 Synthetic Analogs
+# SpineDx-Tx Clinical Framework v13
 
-This research prototype combines a literature-mapped safety/rules engine with a deterministic synthetic analog simulation.
+Research prototype for structured lumbar clinical–imaging reconciliation.
 
-## What changed in v12
+## Major v13 changes
+- bilateral muscle and reflex documentation
+- weakness quality and trajectory
+- functional heel/toe testing
+- claudication provocation/relief characterization
+- neuropathy, hip, and vascular competing-source prompts
+- direct-image-review, image-quality, and level-by-level imaging governance
+- expanded deformity, collapse, stability, and facet-resection data
+- expanded injection details
+- more specific bladder safety screening
+- isolated axial pain locked out of operative recommendations
+- prior surgery and deformity no longer treated as stand-alone fusion rationales
+- synthetic module relabeled as rule-sensitivity simulation
+- rule registry, validation protocol, and safety-test cases included
 
-- Default synthetic cohort increased from 5,000 to **300,000 patient-level analog scenarios**.
-- Replaced simple score jitter with patient-level phenotype simulation.
-- Added cohort composition checks for urgency, concordance, objective deficit, and instability.
-- Renamed misleading "confidence" and "closest profile" labels.
-- Added explicit simulation audit checks and a model version.
-- Added L1 to the root type so L1–2 foraminal/extraforaminal anatomy is represented correctly.
-- Retained safety-rule precedence and disabled outcome probabilities.
-
-## Scientific limitation
-
-The 300,000 analogs are generated from transparent assumptions. They are not real patients, do not contain observed treatment outcomes, and do not validate the application. Increasing the simulated cohort reduces Monte Carlo noise but cannot reduce bias in the assumptions.
+## Scientific status
+This is not a trained or validated clinical AI model. The Monte Carlo module is for rule sensitivity and software stress testing only. It does not represent observed patients or predict treatment benefit.
 
 ## Local build
-
-```bash
+```powershell
 npm install
 npm run build
-npm run dev
 ```
 
-## Deployment
 
-Copy the project contents into the permanent GitHub repository root, run the production build, then commit and push.
+## Version 14: conservative synthetic-rule surrogate
+
+This build adds an in-browser TypeScript implementation of the capacity-limited
+synthetic-label surrogate v2. The five shallow decision trees were trained on
+240,000 synthetic records and assessed on 60,000 synthetic records with repeated
+holdout evaluation.
+
+The displayed tree scores are synthetic-rule outputs, not probabilities of treatment
+benefit, need for surgery, or clinical outcomes. The detailed v13 clinical form is
+mapped into the smaller training schema, and mapping limitations are shown in the UI.

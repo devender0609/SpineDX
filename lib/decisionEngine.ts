@@ -21,21 +21,40 @@ export type CaseInput = {
   groinPain: boolean;
   patientGoal: string;
 
-  hipFlexion: MotorGrade;
-  kneeExtension: MotorGrade;
-  ankleDorsiflexion: MotorGrade;
-  greatToeExtension: MotorGrade;
-  plantarFlexion: MotorGrade;
-  patellarReflex: Reflex;
-  achillesReflex: Reflex;
+  rightHipFlexion: MotorGrade;
+  leftHipFlexion: MotorGrade;
+  rightKneeExtension: MotorGrade;
+  leftKneeExtension: MotorGrade;
+  rightAnkleDorsiflexion: MotorGrade;
+  leftAnkleDorsiflexion: MotorGrade;
+  rightGreatToeExtension: MotorGrade;
+  leftGreatToeExtension: MotorGrade;
+  rightPlantarFlexion: MotorGrade;
+  leftPlantarFlexion: MotorGrade;
+  weaknessQuality: "true" | "pain-limited" | "uncertain";
+  weaknessTrajectory: "none" | "stable" | "progressive" | "improving";
+  rightPatellarReflex: Reflex;
+  leftPatellarReflex: Reflex;
+  rightAchillesReflex: Reflex;
+  leftAchillesReflex: Reflex;
   sensoryRoot: Root | "none" | "non-dermatomal" | "not-tested";
   straightLegRaise: "positive" | "negative" | "not-tested";
   femoralStretch: "positive" | "negative" | "not-tested";
   gaitAbnormal: boolean;
+  heelWalkAbnormal: boolean;
+  toeWalkAbnormal: boolean;
+  repeatedHeelRaiseAbnormal: boolean;
   hipExamAbnormal: boolean;
   pulsesAbnormal: boolean;
+  neuropathyFeatures: boolean;
+  standingProvocationPattern: "not-assessed" | "standing" | "walking" | "both";
+  reliefPattern: "not-assessed" | "sitting" | "flexion" | "stopping-only" | "none";
+  bicycleToleranceBetter: boolean;
 
   imagingAgeMonths: number;
+  actualImagesReviewed: boolean;
+  imageQuality: "adequate" | "limited" | "unknown";
+  levelByLevelDocumented: boolean;
   imagingLevel: "L1-2" | "L2-3" | "L3-4" | "L4-5" | "L5-S1" | "multilevel";
   imagingSide: "right" | "left" | "bilateral" | "central";
   imagingFinding: "disc" | "central-stenosis" | "lateral-recess" | "foraminal" | "extraforaminal" | "other";
@@ -47,6 +66,11 @@ export type CaseInput = {
   translationMillimeters: number;
   angularMotionDegrees: number;
   deformityPresent: boolean;
+  coronalCobbDegrees: number;
+  lateralListhesisMillimeters: number;
+  segmentalKyphosisDegrees: number;
+  sagittalImbalancePresent: boolean;
+  foraminalCollapse: "unknown" | "absent" | "present";
   priorLumbarSurgery: boolean;
   plannedFacetResection: "unknown" | "limited" | "substantial";
 
@@ -57,9 +81,17 @@ export type CaseInput = {
   injectionLevel: "unknown" | "L1-2" | "L2-3" | "L3-4" | "L4-5" | "L5-S1";
   injectionSide: "unknown" | "right" | "left" | "bilateral";
   injectionDurationDays: number;
+  injectionType: "unknown" | "transforaminal" | "interlaminar" | "caudal" | "selective-root";
+  injectionImmediateReliefPercent: number;
+  injectionDelayedReliefPercent: number;
+  injectionFunctionImproved: boolean;
 
   progressiveWeakness: boolean;
   urinaryRetention: boolean;
+  urinarySensationLoss: boolean;
+  urinaryInitiationDifficulty: boolean;
+  overflowIncontinence: boolean;
+  urgencyAlone: boolean;
   saddleAnesthesia: boolean;
   bilateralSevereDeficit: boolean;
   fever: boolean;
@@ -138,11 +170,11 @@ function expectedRoot(input: CaseInput): Root | null {
 function motorRoots(input: CaseInput): Root[] {
   const roots: Root[] = [];
   const weak = (g: MotorGrade) => g !== "5" && g !== "not-tested";
-  if (weak(input.hipFlexion)) roots.push("L2", "L3");
-  if (weak(input.kneeExtension)) roots.push("L3", "L4");
-  if (weak(input.ankleDorsiflexion)) roots.push("L4", "L5");
-  if (weak(input.greatToeExtension)) roots.push("L5");
-  if (weak(input.plantarFlexion)) roots.push("S1");
+  if ([input.rightHipFlexion,input.leftHipFlexion].some(weak)) roots.push("L2", "L3");
+  if ([input.rightKneeExtension,input.leftKneeExtension].some(weak)) roots.push("L3", "L4");
+  if ([input.rightAnkleDorsiflexion,input.leftAnkleDorsiflexion].some(weak)) roots.push("L4", "L5");
+  if ([input.rightGreatToeExtension,input.leftGreatToeExtension].some(weak)) roots.push("L5");
+  if ([input.rightPlantarFlexion,input.leftPlantarFlexion].some(weak)) roots.push("S1");
   return [...new Set(roots)];
 }
 
@@ -154,7 +186,7 @@ function lateralityCompatibility(input: CaseInput): "match" | "partial" | "misma
 }
 
 function seriousPathology(input: CaseInput) {
-  const ces = input.urinaryRetention || input.saddleAnesthesia || input.bilateralSevereDeficit;
+  const ces = input.urinaryRetention || input.urinarySensationLoss || input.urinaryInitiationDifficulty || input.overflowIncontinence || input.saddleAnesthesia || input.bilateralSevereDeficit;
   const infection = input.fever && (input.bacteremiaOrRecentInfection || input.immunosuppression || input.recentProcedure);
   const cancer = input.cancerHistory && (input.nightRestPain || input.unexplainedWeightLoss);
   const fracture = input.recentTrauma || ((input.osteoporosisRisk || input.chronicSteroidUse) && input.age >= 65);
@@ -280,9 +312,12 @@ export function evaluateCase(input: CaseInput): DecisionOutput {
   } else if (urgency === "routine" && clinicalImagingCoherent && input.symptomDurationWeeks >= 6 && (input.legPain > input.backPain || input.painPattern === "claudication")) {
     surgicalDecision.push("Elective surgical consultation is reasonable when function-limiting leg symptoms persist despite appropriate care and direct image review confirms a concordant surgically remediable lesion.");
   }
-  if (input.painPattern === "axial") surgicalDecision.push("Predominantly axial pain alone is nonspecific and should not be used as a stand-alone indication for decompression. Fusion for isolated low-back pain is outside this prototype and requires diagnosis-specific evaluation.");
+  if (input.painPattern === "axial") { surgicalDecision.push("Predominantly axial pain is outside the validated operative scope of this prototype. Do not generate a decompression or fusion recommendation; use a separate diagnosis-specific assessment pathway."); operativeOptions.length = 0; }
 
   surgicalPrerequisites.push("Direct clinician review of the actual MRI/CT images, not the radiology report alone.");
+  if (!input.actualImagesReviewed) missing.push("Actual images have not been confirmed as reviewed; do not finalize an invasive target from report text alone.");
+  if ((input.imagingLevel === "multilevel" || input.imagingFinding === "central-stenosis") && !input.levelByLevelDocumented) missing.push("Complete the level-by-level imaging matrix before selecting an operative target.");
+  if (input.imageQuality !== "adequate") missing.push("Document whether image quality is adequate for level-, side-, and zone-specific interpretation.");
   surgicalPrerequisites.push("Documented concordance among symptoms, side, level/zone, and objective neurologic or claudication findings.");
   surgicalPrerequisites.push("A patient-centered discussion of expected benefit, uncertainty, alternatives, recovery, and the possibility of persistent back or leg symptoms.");
   if (input.imagingFinding === "disc") { operativeOptions.push("For concordant persistent radiculopathy from a focal lumbar disc herniation, limited discectomy/microdiscectomy may be considered; expected benefit is primarily faster leg-pain relief rather than guaranteed back-pain resolution."); evidenceIds.add("SPORT-LDH"); }
@@ -296,7 +331,7 @@ export function evaluateCase(input: CaseInput): DecisionOutput {
   if (input.spondylolisthesis) {
     evidenceIds.add("NORDSTEN-5Y");
     if (input.dynamicInstability === "absent" && !input.deformityPresent && input.plannedFacetResection !== "substantial") { fusionAssessment = "For many patients with stenosis and degenerative spondylolisthesis without a compelling instability, deformity, severe foraminal-collapse, or expected iatrogenic-instability mechanism, randomized trials support decompression alone as a reasonable option. This does not exclude fusion for selected anatomy or revision circumstances."; evidenceIds.add("SWEDISH-LSS"); }
-    else if (input.dynamicInstability === "present" || input.deformityPresent || input.plannedFacetResection === "substantial") fusionAssessment = "Fusion may be considered when a clinically meaningful instability/deformity mechanism or expected iatrogenic instability is present, but no single translation or angular threshold should be used as an automatic indication.";
+    else if (input.dynamicInstability === "present" || input.deformityPresent || input.plannedFacetResection === "substantial" || input.foraminalCollapse === "present") fusionAssessment = "Fusion may be considered only when a coherent operative target is present together with an independent mechanism such as clinically meaningful instability, deformity, severe foraminal collapse, revision-related instability, or expected iatrogenic instability. Prior surgery or deformity alone is not sufficient, and no single threshold is automatic.";
     else missing.push("Clarify slip grade/morphology, standing and dynamic imaging, foraminal collapse, deformity, and expected facet resection before discussing fusion.");
   }
 
@@ -328,7 +363,7 @@ export function evaluateCase(input: CaseInput): DecisionOutput {
     { label: "Syndrome characterized", status: input.painPattern === "uncertain" ? "missing" : "met", rationale: "A syndrome label should be supported by symptom behavior, objective findings, and alternatives." },
     { label: "Clinical–imaging laterality reconciled", status: side === "match" ? "met" : side === "not-assessable" ? "missing" : "review", rationale: "Laterality mismatch lowers confidence in a level-specific pain generator." },
     { label: "Root/level relationship assessable", status: root ? "met" : "review", rationale: "Central and multilevel disease cannot be reduced to one root without level-by-level review." },
-    { label: "Objective neurologic examination documented", status: [input.hipFlexion,input.kneeExtension,input.ankleDorsiflexion,input.greatToeExtension,input.plantarFlexion].some(x=>x==="not-tested") ? "missing" : "met", rationale: "Muscle-by-muscle examination is more useful than a single root dropdown." },
+    { label: "Bilateral objective neurologic examination documented", status: [input.rightHipFlexion,input.leftHipFlexion,input.rightKneeExtension,input.leftKneeExtension,input.rightAnkleDorsiflexion,input.leftAnkleDorsiflexion,input.rightGreatToeExtension,input.leftGreatToeExtension,input.rightPlantarFlexion,input.leftPlantarFlexion].some(x=>x==="not-tested") ? "missing" : "met", rationale: "Side-specific muscle testing and weakness quality are required for reliable concordance." },
     { label: "Competing hip/vascular/peripheral sources addressed", status: (input.hipExamAbnormal || input.pulsesAbnormal || input.sensoryRoot === "non-dermatomal") ? "review" : "met", rationale: "Alternative pain generators are common and may coexist." },
     { label: "Imaging current and intervention-relevant", status: input.imagingAgeMonths > 12 ? "review" : "met", rationale: "Repeat imaging is justified when it is likely to change management, not by age alone." },
     { label: "Patient goal and prior care documented", status: input.patientGoal.trim() && (input.completedExerciseProgram || urgency !== "routine") ? "met" : "review", rationale: "Treatment should be linked to function, preferences, and prior care." },
