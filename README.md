@@ -1,36 +1,37 @@
-# SpineDx-Tx AI Professional v10
+# SpineDx-Tx Hybrid AI v11
 
-This revision improves final-step usability. The Generate clinical synthesis button remains visibly clickable. Clicking it performs required-field and final-review validation; missing confirmations are shown as actionable errors rather than hiding the reason behind a disabled button.
+A physician-facing lumbar degenerative clinical reconciliation research prototype combining:
 
-# SpineDx-Tx Professional v8
+1. Transparent safety and literature-mapped rules
+2. A deterministic synthetic analog simulation
+3. Clinician-reviewable rationale and uncertainty
+4. A concise generated synthesis
 
-A physician-facing lumbar clinical reconciliation prototype with a streamlined four-step workflow and a concise, evidence-linked synthesis.
+## Important scientific limitation
 
-## Design changes
-- Four-stage workflow instead of six long stacked forms
-- Sticky navigation and summary workspace
-- Assessment, Management, and Evidence tabs
-- Important actions shown first; detailed content is collapsible
-- Surgical strategies, prerequisites, fusion considerations, risks, and optimization retained
-- Mobile and print layouts
-
-## Important limitation
-This is a research and documentation prototype. It is not a diagnosis, treatment recommendation, surgical authorization tool, or substitute for direct clinician review of the patient and imaging.
+The synthetic module is not trained or calibrated on real patient outcomes. Its percentages represent agreement across simulated scenarios created from transparent assumptions; they are not outcome probabilities, causal treatment effects, or validated recommendations. Outcome prediction is intentionally disabled until real-data calibration and external validation are completed.
 
 ## Run
+
 ```bash
 npm install
 npm run build
 npm run dev
 ```
 
+## Architecture
 
-## v8 workflow change
-The synthesis action is available only on the final Safety & Planning step. Earlier steps use Back/Continue navigation, and the results panel appears only after a complete four-step submission.
+- `lib/decisionEngine.ts`: safety, anatomy, guideline and management logic
+- `lib/syntheticEngine.ts`: deterministic Monte Carlo analog simulation
+- `components/SpineDecisionApp.tsx`: guided workflow and result views
 
-## v9 workflow correction
+## Validation roadmap
 
-- Loading the example now clears any previously generated synthesis.
-- Opening the final Safety & planning step never generates a synthesis.
-- The final synthesis button remains disabled until the clinician confirms review of the safety screen, prior care, and perioperative risk sections.
-- A synthesis is created only by an explicit form submission after all required fields and final-review confirmations pass validation.
+1. Multidisciplinary rule adjudication
+2. Synthetic stress testing and impossible-case testing
+3. Retrospective institutional calibration
+4. Temporal and external validation
+5. Silent prospective evaluation
+6. Clinical-impact trial
+
+Do not enter identifiable patient information. Not for autonomous diagnosis, ordering, authorization, or surgical selection.

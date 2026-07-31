@@ -26,3 +26,5 @@
 }
 
 .review-status{margin:12px 0 4px;padding:10px 12px;border:1px solid #c9d8f2;background:#f5f8ff;color:#34558a;border-radius:10px;font-size:12px;font-weight:700}.primary-button:focus-visible{outline:3px solid rgba(47,100,219,.28);outline-offset:3px}.primary-button:hover{filter:brightness(1.03);transform:translateY(-1px)}
+
+.model-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}.model-meta span{background:#fff;border:1px solid #dbe5f3;border-radius:10px;padding:10px 12px;font-size:.88rem}.pathway-bars{display:grid;gap:18px}.pathway-row{display:grid;gap:7px}.pathway-label{display:flex;justify-content:space-between;gap:16px}.pathway-label span{font-weight:800;color:#184eb6}.pathway-track{height:9px;border-radius:999px;background:#e6edf8;overflow:hidden}.pathway-track i{display:block;height:100%;background:linear-gradient(90deg,#214f9f,#3570dc);border-radius:999px}.pathway-row small{color:#5b6b84;line-height:1.45}

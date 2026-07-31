@@ -2,6 +2,7 @@
 
 import { FormEvent, ReactNode, useMemo, useRef, useState } from "react";
 import { CaseInput, EVIDENCE, evaluateCase, validateCase } from "@/lib/decisionEngine";
+import { runSyntheticAnalogModel } from "@/lib/syntheticEngine";
 
 const initialCase: CaseInput = {
   age: 66, symptomDurationWeeks: 32, onset: "chronic", side: "right", painPattern: "radicular", suspectedRoot: "L5",
@@ -24,7 +25,7 @@ const initialCase: CaseInput = {
 
 type Stage = "presentation" | "exam" | "imaging" | "planning";
 const STAGES: Stage[] = ["presentation", "exam", "imaging", "planning"];
-type ResultTab = "assessment" | "management" | "evidence";
+type ResultTab = "assessment" | "management" | "hybrid" | "evidence";
 
 function Field({ label, required, help, children }: { label: string; required?: boolean; help?: string; children: ReactNode }) {
   return <label className="field"><span className="field-label">{label}{required && <b className="required"> *</b>}</span>{children}{help && <small>{help}</small>}</label>;
@@ -56,6 +57,7 @@ export default function SpineDecisionApp() {
   const [finalReview, setFinalReview] = useState({ safety: false, priorCare: false, risk: false });
   const resultsRef = useRef<HTMLElement>(null);
   const result = useMemo(()=>snapshot ? evaluateCase(snapshot) : null,[snapshot]);
+  const synthetic = useMemo(() => snapshot && result ? runSyntheticAnalogModel(snapshot, result) : null, [snapshot, result]);
   const stale = snapshot ? JSON.stringify(data)!==JSON.stringify(snapshot) : false;
   const update = <K extends keyof CaseInput>(key:K,value:CaseInput[K]) => { setData(p=>({...p,[key]:value})); setErrors([]); };
   const submit=(e:FormEvent)=>{e.preventDefault(); const v=validateCase(data); if (!finalReview.safety) v.push("Confirm that the urgent safety screen has been reviewed."); if (!finalReview.priorCare) v.push("Confirm that prior care and injection details have been reviewed."); if (!finalReview.risk) v.push("Confirm that perioperative risk has been reviewed or marked not applicable."); setErrors(v); if(v.length){scrollTo({top:0,behavior:"smooth"});return;} setSnapshot({...data}); setGeneratedAt(new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})); setResultTab("assessment"); setTimeout(()=>resultsRef.current?.scrollIntoView({behavior:"smooth",block:"start"}),50)};
@@ -191,7 +193,7 @@ export default function SpineDecisionApp() {
 
           <Card title={result.urgency === "routine" ? "Priority assessment" : "Time-sensitive assessment"} eyebrow="WHAT MATTERS NOW" tone={result.urgency === "routine" ? "soft" : "warning"}><p className="lead">{result.urgencyReason}</p></Card>
 
-          <div className="result-tabs"><button className={resultTab==="assessment"?"active":""} onClick={()=>setResultTab("assessment")}>Assessment</button><button className={resultTab==="management"?"active":""} onClick={()=>setResultTab("management")}>Management</button><button className={resultTab==="evidence"?"active":""} onClick={()=>setResultTab("evidence")}>Evidence</button></div>
+          <div className="result-tabs"><button className={resultTab==="assessment"?"active":""} onClick={()=>setResultTab("assessment")}>Assessment</button><button className={resultTab==="management"?"active":""} onClick={()=>setResultTab("management")}>Management</button><button className={resultTab==="hybrid"?"active":""} onClick={()=>setResultTab("hybrid")}>Hybrid AI</button><button className={resultTab==="evidence"?"active":""} onClick={()=>setResultTab("evidence")}>Evidence</button></div>
 
           {resultTab === "assessment" && <div className="result-stack">
             <Card title="Clinical–imaging reconciliation" eyebrow={result.reconciliation.toUpperCase()}><p>{result.reconciliationNarrative}</p></Card>
@@ -208,6 +210,19 @@ export default function SpineDecisionApp() {
             <Card title="Decompression versus fusion" tone="soft"><p className="lead">{result.fusionAssessment}</p></Card>
             <details className="detail-block" open><summary>Prerequisites before operative planning</summary><div className="detail-body"><List items={result.surgicalPrerequisites}/></div></details>
             <details className="detail-block"><summary>Procedure-related risks to discuss</summary><div className="detail-body"><List items={result.operativeRisks}/></div></details>
+          </div>}
+
+          {resultTab === "hybrid" && synthetic && <div className="result-stack">
+            <Card title="Synthetic analog model" eyebrow="HYBRID AI RESEARCH MODULE" tone="soft">
+              <p className="lead">{synthetic.modelNotice}</p>
+              <div className="model-meta"><span><b>{synthetic.cohortSize.toLocaleString()}</b> simulated analogs</span><span><b>{synthetic.confidence}</b> interpretability confidence</span></div>
+            </Card>
+            <Card title="Pathway support across simulated analogs" eyebrow="SCENARIO AGREEMENT — NOT OUTCOME PROBABILITY">
+              <div className="pathway-bars">{synthetic.pathwaySupport.map(x=><div className="pathway-row" key={x.key}><div className="pathway-label"><b>{x.label}</b><span>{x.agreement}%</span></div><div className="pathway-track"><i style={{width:`${x.agreement}%`}} /></div><small>{x.rationale}</small></div>)}</div>
+            </Card>
+            <div className="two-col"><Card title="Closest simulated profile"><p>{synthetic.nearestProfile}</p></Card><Card title="Uncertainty drivers"><List items={synthetic.uncertaintyDrivers} empty="No major uncertainty driver was triggered by the current fields."/></Card></div>
+            <Card title="Outcome prediction status" tone="warning"><p>{synthetic.outcomeStatus}</p></Card>
+            <details className="detail-block"><summary>How this module works</summary><div className="detail-body"><ul><li>Patient inputs are passed first through the safety and literature-rule engine.</li><li>A deterministic Monte Carlo cohort perturbs transparent evidence-informed pathway assumptions.</li><li>The displayed percentages summarize simulated scenario agreement, not treatment benefit, complication risk, or causal effect.</li><li>Safety rules override the synthetic model. No autonomous order or procedure recommendation is generated.</li></ul></div></details>
           </div>}
 
           {resultTab === "evidence" && <div className="result-stack"><Card title="Evidence map" eyebrow="RULE-CATEGORY SUPPORT"><p className="muted">These references support the general rule category. They do not validate this software or create a patient-specific recommendation.</p><div className="evidence-list">{evidence.map(x=><article key={x.id}><div><Pill tone="info">{x.id}</Pill><span>{x.year}</span></div><h3>{x.title}</h3><p>{x.source}</p><small>{x.note}</small></article>)}</div></Card></div>}
