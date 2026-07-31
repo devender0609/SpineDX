@@ -37,3 +37,7 @@ holdout evaluation.
 The displayed tree scores are synthetic-rule outputs, not probabilities of treatment
 benefit, need for surgery, or clinical outcomes. The detailed v13 clinical form is
 mapped into the smaller training schema, and mapping limitations are shown in the UI.
+
+
+## Version 15
+Adds the 23-point clinical validation framework described in docs/V15_IMPLEMENTATION_MAP.md.

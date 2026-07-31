@@ -1,374 +1,115 @@
 export type Laterality = "right" | "left" | "bilateral" | "midline";
 export type Root = "L1" | "L2" | "L3" | "L4" | "L5" | "S1";
-export type MotorGrade = "5" | "4" | "3" | "2" | "1" | "0" | "not-tested";
+export type MotorGrade = "5" | "4+" | "4" | "3" | "2" | "1" | "0" | "not-tested";
 export type Reflex = "normal" | "reduced" | "absent" | "brisk" | "not-tested";
-
+export type Severity = "none" | "mild" | "moderate" | "severe" | "not-graded";
+export type LumbarLevel = "L1-2" | "L2-3" | "L3-4" | "L4-5" | "L5-S1";
+export type LevelFinding = {
+  level: LumbarLevel;
+  central: Severity;
+  rightRecess: Severity;
+  leftRecess: Severity;
+  rightForamen: Severity;
+  leftForamen: Severity;
+  discMorphology: "none" | "bulge" | "protrusion" | "extrusion" | "sequestration";
+  migration: "none" | "cranial" | "caudal";
+  synovialCyst: boolean;
+  rootDeformation: boolean;
+  priorDecompression: boolean;
+};
 export type CaseInput = {
-  age: number;
-  symptomDurationWeeks: number;
-  onset: "acute" | "subacute" | "chronic";
-  side: Laterality;
-  painPattern: "radicular" | "claudication" | "axial" | "mixed" | "uncertain";
-  suspectedRoot: Root | "none" | "multiroot";
-  backPain: number;
-  legPain: number;
-  walkingLimitMeters: number;
-  standingProvokes: boolean;
-  sittingRelieves: boolean;
-  flexionRelieves: boolean;
-  coughSneezeProvokes: boolean;
-  nightRestPain: boolean;
-  groinPain: boolean;
-  patientGoal: string;
+  age:number; symptomDurationWeeks:number; onset:"acute"|"subacute"|"chronic"; side:Laterality;
+  painPattern:"radicular"|"claudication"|"axial"|"mixed"|"uncertain"; suspectedRoot:Root|"none"|"multiroot";
+  backPain:number; legPain:number; walkingLimitMeters:number; standingProvokes:boolean; sittingRelieves:boolean; flexionRelieves:boolean;
+  coughSneezeProvokes:boolean; nightRestPain:boolean; groinPain:boolean; patientGoal:string;
+  mostImportantSymptom:"leg-pain"|"back-pain"|"weakness"|"numbness"|"walking"|"other";
+  desiredActivity:string; treatmentPreference:"nonoperative"|"surgery-open"|"undecided"; riskTolerance:"low"|"moderate"|"high";
+  workDemand:"sedentary"|"light"|"moderate"|"heavy"|"retired"; homeSupport:"adequate"|"limited"|"unknown";
+  odi:number; promisPhysicalFunction:number; promisPainInterference:number; depressionTScore:number; zcqSeverity:number;
 
-  rightHipFlexion: MotorGrade;
-  leftHipFlexion: MotorGrade;
-  rightKneeExtension: MotorGrade;
-  leftKneeExtension: MotorGrade;
-  rightAnkleDorsiflexion: MotorGrade;
-  leftAnkleDorsiflexion: MotorGrade;
-  rightGreatToeExtension: MotorGrade;
-  leftGreatToeExtension: MotorGrade;
-  rightPlantarFlexion: MotorGrade;
-  leftPlantarFlexion: MotorGrade;
-  weaknessQuality: "true" | "pain-limited" | "uncertain";
-  weaknessTrajectory: "none" | "stable" | "progressive" | "improving";
-  rightPatellarReflex: Reflex;
-  leftPatellarReflex: Reflex;
-  rightAchillesReflex: Reflex;
-  leftAchillesReflex: Reflex;
-  sensoryRoot: Root | "none" | "non-dermatomal" | "not-tested";
-  straightLegRaise: "positive" | "negative" | "not-tested";
-  femoralStretch: "positive" | "negative" | "not-tested";
-  gaitAbnormal: boolean;
-  heelWalkAbnormal: boolean;
-  toeWalkAbnormal: boolean;
-  repeatedHeelRaiseAbnormal: boolean;
-  hipExamAbnormal: boolean;
-  pulsesAbnormal: boolean;
-  neuropathyFeatures: boolean;
-  standingProvocationPattern: "not-assessed" | "standing" | "walking" | "both";
-  reliefPattern: "not-assessed" | "sitting" | "flexion" | "stopping-only" | "none";
-  bicycleToleranceBetter: boolean;
+  rightHipFlexion:MotorGrade; leftHipFlexion:MotorGrade; rightKneeExtension:MotorGrade; leftKneeExtension:MotorGrade;
+  rightAnkleDorsiflexion:MotorGrade; leftAnkleDorsiflexion:MotorGrade; rightGreatToeExtension:MotorGrade; leftGreatToeExtension:MotorGrade;
+  rightPlantarFlexion:MotorGrade; leftPlantarFlexion:MotorGrade;
+  weaknessQuality:"true"|"pain-limited"|"give-way"|"uncertain"; weaknessTrajectory:"none"|"stable"|"progressive"|"improving";
+  weaknessDurationDays:number; muscleAtrophy:boolean; examConfidence:"high"|"moderate"|"low";
+  rightPatellarReflex:Reflex; leftPatellarReflex:Reflex; rightAchillesReflex:Reflex; leftAchillesReflex:Reflex;
+  rightSensoryRoot:Root|"none"|"non-dermatomal"|"not-tested"; leftSensoryRoot:Root|"none"|"non-dermatomal"|"not-tested";
+  sensoryRoot:Root|"none"|"non-dermatomal"|"not-tested";
+  straightLegRaise:"positive"|"negative"|"not-tested"; femoralStretch:"positive"|"negative"|"not-tested";
+  gaitAbnormal:boolean; heelWalkAbnormal:boolean; toeWalkAbnormal:boolean; repeatedHeelRaiseAbnormal:boolean;
+  hipExamAbnormal:boolean; pulsesAbnormal:boolean; neuropathyFeatures:boolean;
+  standingProvocationPattern:"not-assessed"|"standing"|"walking"|"both"; reliefPattern:"not-assessed"|"sitting"|"flexion"|"stopping-only"|"none";
+  bicycleToleranceBetter:boolean; uphillBetter:boolean; legHeaviness:boolean;
 
-  imagingAgeMonths: number;
-  actualImagesReviewed: boolean;
-  imageQuality: "adequate" | "limited" | "unknown";
-  levelByLevelDocumented: boolean;
-  imagingLevel: "L1-2" | "L2-3" | "L3-4" | "L4-5" | "L5-S1" | "multilevel";
-  imagingSide: "right" | "left" | "bilateral" | "central";
-  imagingFinding: "disc" | "central-stenosis" | "lateral-recess" | "foraminal" | "extraforaminal" | "other";
-  stenosisSeverity: "mild" | "moderate" | "severe" | "not-graded";
-  migratedDisc: boolean;
-  spondylolisthesis: boolean;
-  slipMillimeters: number;
-  dynamicInstability: "unknown" | "absent" | "present";
-  translationMillimeters: number;
-  angularMotionDegrees: number;
-  deformityPresent: boolean;
-  coronalCobbDegrees: number;
-  lateralListhesisMillimeters: number;
-  segmentalKyphosisDegrees: number;
-  sagittalImbalancePresent: boolean;
-  foraminalCollapse: "unknown" | "absent" | "present";
-  priorLumbarSurgery: boolean;
-  plannedFacetResection: "unknown" | "limited" | "substantial";
+  imagingAgeMonths:number; actualImagesReviewed:boolean; imageQuality:"adequate"|"limited"|"unknown"; levelByLevelDocumented:boolean;
+  imagingMatrix:LevelFinding[]; imagingLevel:LumbarLevel|"multilevel"; imagingSide:"right"|"left"|"bilateral"|"central";
+  imagingFinding:"disc"|"central-stenosis"|"lateral-recess"|"foraminal"|"extraforaminal"|"other"; stenosisSeverity:"mild"|"moderate"|"severe"|"not-graded";
+  migratedDisc:boolean; spondylolisthesis:boolean; slipMillimeters:number; slipType:"none"|"degenerative"|"isthmic"|"high-grade";
+  dynamicInstability:"unknown"|"absent"|"present"; translationMillimeters:number; angularMotionDegrees:number;
+  deformityPresent:boolean; coronalCobbDegrees:number; lateralListhesisMillimeters:number; segmentalKyphosisDegrees:number; sagittalImbalancePresent:boolean;
+  foraminalCollapse:"unknown"|"absent"|"present"; priorLumbarSurgery:boolean; priorLongFusion:boolean; plannedFacetResection:"unknown"|"limited"|"substantial";
 
-  completedExerciseProgram: boolean;
-  exerciseWeeks: number;
-  medicationTrial: boolean;
-  injectionResponse: "not-tried" | "none" | "brief" | "meaningful-temporary" | "sustained";
-  injectionLevel: "unknown" | "L1-2" | "L2-3" | "L3-4" | "L4-5" | "L5-S1";
-  injectionSide: "unknown" | "right" | "left" | "bilateral";
-  injectionDurationDays: number;
-  injectionType: "unknown" | "transforaminal" | "interlaminar" | "caudal" | "selective-root";
-  injectionImmediateReliefPercent: number;
-  injectionDelayedReliefPercent: number;
-  injectionFunctionImproved: boolean;
+  completedExerciseProgram:boolean; exerciseWeeks:number; medicationTrial:boolean;
+  injectionResponse:"not-tried"|"none"|"brief"|"meaningful-temporary"|"sustained"; injectionLevel:"unknown"|LumbarLevel; injectionSide:"unknown"|"right"|"left"|"bilateral";
+  injectionDurationDays:number; injectionType:"unknown"|"transforaminal"|"interlaminar"|"caudal"|"selective-root";
+  injectionImmediateReliefPercent:number; injectionDelayedReliefPercent:number; injectionFunctionImproved:boolean;
 
-  progressiveWeakness: boolean;
-  urinaryRetention: boolean;
-  urinarySensationLoss: boolean;
-  urinaryInitiationDifficulty: boolean;
-  overflowIncontinence: boolean;
-  urgencyAlone: boolean;
-  saddleAnesthesia: boolean;
-  bilateralSevereDeficit: boolean;
-  fever: boolean;
-  bacteremiaOrRecentInfection: boolean;
-  immunosuppression: boolean;
-  recentProcedure: boolean;
-  cancerHistory: boolean;
-  unexplainedWeightLoss: boolean;
-  recentTrauma: boolean;
-  osteoporosisRisk: boolean;
-  chronicSteroidUse: boolean;
-  inflammatoryFeatures: boolean;
+  progressiveWeakness:boolean; urinaryRetention:boolean; urinarySensationLoss:boolean; urinaryInitiationDifficulty:boolean; overflowIncontinence:boolean;
+  urgencyAlone:boolean; saddleAnesthesia:boolean; bilateralSevereDeficit:boolean; reducedAnalTone:"not-assessed"|"normal"|"reduced";
+  postVoidResidualMl:number; fever:boolean; bacteremiaOrRecentInfection:boolean; immunosuppression:boolean; recentProcedure:boolean;
+  cancerHistory:boolean; unexplainedWeightLoss:boolean; recentTrauma:boolean; osteoporosisRisk:boolean; chronicSteroidUse:boolean; inflammatoryFeatures:boolean;
 
-  smoking: boolean;
-  diabetes: boolean;
-  a1c: number;
-  bmi: number;
-  frailty: "none" | "mild" | "moderate" | "severe" | "unknown";
-  boneHealth: "normal" | "osteopenia" | "osteoporosis" | "unknown";
-  chronicOpioidUse: boolean;
-  depressionAnxietyConcern: boolean;
-  anticoagulation: boolean;
+  smoking:boolean; diabetes:boolean; a1c:number; bmi:number; frailty:"none"|"mild"|"moderate"|"severe"|"unknown"; boneHealth:"normal"|"osteopenia"|"osteoporosis"|"unknown";
+  chronicOpioidUse:boolean; depressionAnxietyConcern:boolean; anticoagulation:boolean; anemia:boolean; albumin:number; cardiopulmonaryDisease:boolean;
+
+  pediatric:boolean; pregnant:boolean; cervicalThoracicSymptoms:boolean; neuromuscularDisease:boolean; tumorKnown:boolean; infectionKnown:boolean; acuteFractureKnown:boolean;
+  clinicianAgreement:"not-reviewed"|"agree"|"partly-agree"|"disagree"; overrideReason:string; finalClinicalDecision:string;
 };
-
-export type EvidenceRef = { id: string; title: string; source: string; year: number; note: string };
-export type Check = { label: string; status: "met" | "review" | "missing"; rationale: string };
-export type DecisionOutput = {
-  urgency: "routine" | "urgent" | "emergency";
-  urgencyReason: string;
-  syndrome: string;
-  reconciliation: "concordant" | "partially-concordant" | "discordant" | "insufficient";
-  reconciliationNarrative: string;
-  support: string[];
-  contradictions: string[];
-  missing: string[];
-  alternatives: string[];
-  diagnosticNextSteps: string[];
-  nonoperativePathway: string[];
-  surgicalDecision: string[];
-  fusionAssessment: string;
-  operativeOptions: string[];
-  surgicalPrerequisites: string[];
-  operativeRisks: string[];
-  optimization: string[];
-  checks: Check[];
-  evidenceIds: string[];
+export type EvidenceRef={id:string;title:string;source:string;year:number;note:string;population:string;limitations:string};
+export type RuleTrace={ruleId:string;finding:string;basis:string;strength:"high"|"moderate"|"limited"|"consensus"};
+export type CandidateTarget={level:string;side:string;root:string;zone:string;score:number;for:string[];against:string[]};
+export type Applicability={status:"appropriate"|"limited"|"out-of-scope";reasons:string[]};
+export type DecisionOutput={
+ urgency:"routine"|"urgent"|"emergency"; urgencyReason:string; syndrome:string; neurologicSeverity:"none"|"mild"|"moderate"|"severe";
+ reconciliation:"concordant"|"partially-concordant"|"discordant"|"insufficient"; reconciliationNarrative:string;
+ applicability:Applicability; candidateTargets:CandidateTarget[]; support:string[]; contradictions:string[]; missing:string[]; alternatives:string[];
+ diagnosticNextSteps:string[]; nonoperativePathway:string[]; surgicalDecision:string[]; fusionAssessment:string; operativeOptions:string[];
+ surgicalPrerequisites:string[]; operativeRisks:string[]; optimization:string[]; patientGoalAlignment:string; riskSummary:string[];
+ ruleTrace:RuleTrace[]; evidenceIds:string[]; checks:{label:string;status:"met"|"review"|"missing";rationale:string}[];
 };
-
-export const EVIDENCE: EvidenceRef[] = [
-  { id: "ACR-LBP", title: "ACR Appropriateness Criteria: Low Back Pain", source: "American College of Radiology", year: 2021, note: "Imaging appropriateness depends on red flags, prior management, and whether intervention is being considered." },
-  { id: "NICE-NG59", title: "Low back pain and sciatica in over 16s", source: "NICE NG59", year: 2020, note: "Assessment should consider alternative diagnoses, shared decision-making, and non-invasive and invasive options." },
-  { id: "GIRFT-CES", title: "National suspected cauda equina syndrome pathway", source: "NICE/GIRFT", year: 2025, note: "New bladder dysfunction, saddle sensory change, or major neurologic deterioration requires urgent local emergency-pathway assessment." },
-  { id: "NASS-LDH", title: "Diagnosis and Treatment of Lumbar Disc Herniation with Radiculopathy", source: "North American Spine Society", year: 2012, note: "Diagnosis requires clinical and imaging correlation; no single examination finding is definitive." },
-  { id: "NASS-LSS", title: "Diagnosis and Treatment of Degenerative Lumbar Spinal Stenosis", source: "North American Spine Society", year: 2011, note: "Lumbar stenosis is a clinical syndrome and imaging severity alone does not establish symptom causation." },
-  { id: "NORDSTEN-5Y", title: "Nordsten-DS five-year randomized trial", source: "BMJ", year: 2024, note: "For many patients with stenosis and degenerative spondylolisthesis, decompression alone was non-inferior to decompression plus fusion; subgroup exceptions may exist." },
-  { id: "SPORT-LDH", title: "SPORT lumbar disc herniation trial", source: "JAMA", year: 2006, note: "Both operative and nonoperative groups improved; surgery generally produced faster relief in appropriately selected patients, while crossover limits randomized comparisons." },
-  { id: "SWEDISH-LSS", title: "Swedish Spinal Stenosis Study, five-year results", source: "Bone & Joint Journal", year: 2024, note: "Routine addition of fusion to decompression did not improve five-year disability outcomes in the studied stenosis population." },
-  { id: "CNS-RISK", title: "Preoperative spine surgical risk assessment", source: "CNS/AANS guideline", year: 2021, note: "Diabetes, smoking, and other modifiable risks should be assessed and counseled; BMI evidence is inconsistent and should not be used alone." },
-  { id: "CNS-BONE", title: "Preoperative osteoporosis assessment", source: "CNS/AANS guideline", year: 2021, note: "Patients with suspected osteoporosis undergoing instrumentation should receive bone-health assessment and counseling." },
+export const EVIDENCE:EvidenceRef[]=[
+ {id:"NASS-LDH",title:"Lumbar Disc Herniation With Radiculopathy",source:"North American Spine Society",year:2012,note:"Clinical and imaging correlation is required; no single examination finding is definitive.",population:"Adults with lumbar disc herniation and radiculopathy.",limitations:"Guideline predates some contemporary trials and techniques."},
+ {id:"NASS-LSS",title:"Degenerative Lumbar Spinal Stenosis",source:"North American Spine Society",year:2011,note:"Stenosis is a clinical syndrome; imaging severity alone does not establish causation.",population:"Adults with degenerative lumbar stenosis.",limitations:"Evidence quality varies by intervention and outcome."},
+ {id:"NORDSTEN-5Y",title:"Nordsten-DS Five-Year Randomized Trial",source:"BMJ",year:2024,note:"Decompression alone was non-inferior to decompression plus fusion for many patients with stenosis and degenerative spondylolisthesis.",population:"Selected patients with stenosis and degenerative spondylolisthesis.",limitations:"Does not apply automatically to high-grade, isthmic, deformity, destructive, or clearly unstable pathology."},
+ {id:"SWEDISH-LSS",title:"Swedish Spinal Stenosis Study Five-Year Results",source:"Bone & Joint Journal",year:2024,note:"Routine fusion did not improve five-year disability outcomes in the studied population.",population:"Patients undergoing surgery for lumbar stenosis with or without low-grade slip.",limitations:"Individual anatomy and instability mechanisms still require assessment."},
+ {id:"ACR-LBP",title:"Appropriateness Criteria: Low Back Pain",source:"American College of Radiology",year:2021,note:"Imaging and escalation depend on red flags, prior care, and intended intervention.",population:"Adults with low back pain and related symptoms.",limitations:"Appropriateness guidance does not replace direct clinical evaluation."},
+ {id:"CES-PATH",title:"Suspected Cauda Equina Emergency Pathway",source:"National emergency pathway",year:2025,note:"Retention, loss of urinary sensation, saddle change, or severe bilateral deficit warrants emergency assessment.",population:"Patients with suspected cauda equina compression.",limitations:"Symptoms are imperfect; local emergency pathways and direct examination govern care."},
+ {id:"CNS-RISK",title:"Preoperative Spine Risk Assessment",source:"CNS/AANS",year:2021,note:"Modifiable risks such as smoking, diabetes, nutrition, anemia, and bone health should be assessed separately from appropriateness.",population:"Patients considered for spine surgery.",limitations:"Risk magnitude varies by procedure and data source."}
 ];
-
-const levelRoots: Record<Exclude<CaseInput["imagingLevel"], "multilevel">, { exiting: Root; traversing: Root }> = {
-  "L1-2": { exiting: "L1", traversing: "L2" },
-  "L2-3": { exiting: "L2", traversing: "L3" },
-  "L3-4": { exiting: "L3", traversing: "L4" },
-  "L4-5": { exiting: "L4", traversing: "L5" },
-  "L5-S1": { exiting: "L5", traversing: "S1" },
-};
-
-function expectedRoot(input: CaseInput): Root | null {
-  if (input.imagingLevel === "multilevel" || input.imagingFinding === "central-stenosis" || input.imagingFinding === "other") return null;
-  const map = levelRoots[input.imagingLevel];
-  return input.imagingFinding === "foraminal" || input.imagingFinding === "extraforaminal" ? map.exiting : map.traversing;
-}
-
-function motorRoots(input: CaseInput): Root[] {
-  const roots: Root[] = [];
-  const weak = (g: MotorGrade) => g !== "5" && g !== "not-tested";
-  if ([input.rightHipFlexion,input.leftHipFlexion].some(weak)) roots.push("L2", "L3");
-  if ([input.rightKneeExtension,input.leftKneeExtension].some(weak)) roots.push("L3", "L4");
-  if ([input.rightAnkleDorsiflexion,input.leftAnkleDorsiflexion].some(weak)) roots.push("L4", "L5");
-  if ([input.rightGreatToeExtension,input.leftGreatToeExtension].some(weak)) roots.push("L5");
-  if ([input.rightPlantarFlexion,input.leftPlantarFlexion].some(weak)) roots.push("S1");
-  return [...new Set(roots)];
-}
-
-function lateralityCompatibility(input: CaseInput): "match" | "partial" | "mismatch" | "not-assessable" {
-  if (input.imagingSide === "central" || input.side === "midline") return "not-assessable";
-  if (input.side === input.imagingSide) return "match";
-  if (input.side === "bilateral" || input.imagingSide === "bilateral") return "partial";
-  return "mismatch";
-}
-
-function seriousPathology(input: CaseInput) {
-  const ces = input.urinaryRetention || input.urinarySensationLoss || input.urinaryInitiationDifficulty || input.overflowIncontinence || input.saddleAnesthesia || input.bilateralSevereDeficit;
-  const infection = input.fever && (input.bacteremiaOrRecentInfection || input.immunosuppression || input.recentProcedure);
-  const cancer = input.cancerHistory && (input.nightRestPain || input.unexplainedWeightLoss);
-  const fracture = input.recentTrauma || ((input.osteoporosisRisk || input.chronicSteroidUse) && input.age >= 65);
-  return { ces, infection, cancer, fracture };
-}
-
-export function validateCase(input: CaseInput): string[] {
-  const errors: string[] = [];
-  if (!Number.isFinite(input.age) || input.age < 18 || input.age > 110) errors.push("Enter an age between 18 and 110 years.");
-  if (!Number.isFinite(input.symptomDurationWeeks) || input.symptomDurationWeeks < 0 || input.symptomDurationWeeks > 1040) errors.push("Enter symptom duration between 0 and 1040 weeks.");
-  if (![input.backPain, input.legPain].every(v => Number.isFinite(v) && v >= 0 && v <= 10)) errors.push("Pain scores must be between 0 and 10.");
-  if (!input.patientGoal.trim()) errors.push("Document a measurable patient goal.");
-  if (input.diabetes && (!Number.isFinite(input.a1c) || input.a1c < 3 || input.a1c > 20)) errors.push("Enter a plausible HbA1c value when diabetes is selected.");
-  if (!Number.isFinite(input.bmi) || input.bmi < 10 || input.bmi > 80) errors.push("Enter a plausible BMI between 10 and 80.");
-  return errors;
-}
-
-export function evaluateCase(input: CaseInput): DecisionOutput {
-  const support: string[] = [];
-  const contradictions: string[] = [];
-  const missing: string[] = [];
-  const alternatives: string[] = [];
-  const diagnosticNextSteps: string[] = [];
-  const nonoperativePathway: string[] = [];
-  const surgicalDecision: string[] = [];
-  const operativeOptions: string[] = [];
-  const surgicalPrerequisites: string[] = [];
-  const operativeRisks: string[] = [];
-  const optimization: string[] = [];
-  const evidenceIds = new Set<string>(["NICE-NG59", "NASS-LDH", "NASS-LSS"]);
-
-  const serious = seriousPathology(input);
-  let urgency: DecisionOutput["urgency"] = "routine";
-  let urgencyReason = "No emergency feature was entered. A negative checklist does not exclude serious disease when history, examination, or risk assessment is incomplete.";
-  if (serious.ces) {
-    urgency = "emergency";
-    urgencyReason = "New urinary retention, saddle sensory change, or severe bilateral neurologic deficit may indicate cauda equina compression. Stop the routine pathway and use the local emergency assessment and urgent MRI pathway.";
-    evidenceIds.add("GIRFT-CES"); evidenceIds.add("ACR-LBP");
-  } else if (input.progressiveWeakness || serious.infection || serious.cancer || serious.fracture) {
-    urgency = "urgent";
-    urgencyReason = "One or more features require expedited clinician assessment for progressive neurologic deficit, infection, malignancy, or fracture. The exact urgency and imaging depend on the full presentation and local protocol.";
-    evidenceIds.add("ACR-LBP");
-  }
-
-  const syndrome = input.painPattern === "radicular" ? `Clinician-entered ${input.suspectedRoot === "none" ? "radicular" : input.suspectedRoot + "-type radicular"} syndrome`
-    : input.painPattern === "claudication" ? "Clinician-entered neurogenic claudication syndrome"
-    : input.painPattern === "axial" ? "Predominantly axial low-back pain syndrome"
-    : input.painPattern === "mixed" ? "Mixed axial and leg-symptom syndrome" : "Uncertain lumbar symptom syndrome";
-
-  let assessable = 0, matched = 0;
-  const side = lateralityCompatibility(input);
-  if (side !== "not-assessable") {
-    assessable++;
-    if (side === "match") { matched++; support.push("Symptom and imaging laterality agree."); }
-    else if (side === "partial") contradictions.push("Laterality is only partially aligned; bilateral symptoms or imaging require level-by-level review.");
-    else contradictions.push("Symptom laterality conflicts with the entered imaging abnormality.");
-  } else missing.push("Laterality cannot be reconciled from a central or midline label alone.");
-
-  const root = expectedRoot(input);
-  if (input.painPattern === "radicular" && input.suspectedRoot !== "none" && input.suspectedRoot !== "multiroot") {
-    if (root) {
-      assessable++;
-      if (root === input.suspectedRoot) { matched++; support.push(`The suspected ${input.suspectedRoot} root is anatomically compatible with the entered level and zone.`); }
-      else contradictions.push(`The suspected ${input.suspectedRoot} root is not the usual exiting/traversing root for the selected lesion. Direct image review and detailed mapping are needed.`);
-    } else missing.push("Single-root localization is not valid for multilevel or central canal disease; document each level, side, and zone.");
-  }
-
-  if (input.painPattern === "claudication") {
-    assessable++;
-    const clinicallyCompatible = input.standingProvokes && (input.sittingRelieves || input.flexionRelieves) && input.walkingLimitMeters > 0;
-    const imagingCompatible = input.imagingFinding === "central-stenosis" || input.imagingLevel === "multilevel";
-    if (clinicallyCompatible && imagingCompatible) { matched++; support.push("The entered posture-dependent walking limitation and stenotic imaging are compatible with neurogenic claudication."); }
-    else contradictions.push("The claudication label is incompletely supported; document posture dependence, walking tolerance, and vascular/hip alternatives.");
-  }
-
-  const objectiveRoots = motorRoots(input);
-  if (objectiveRoots.length && root) {
-    assessable++;
-    if (objectiveRoots.includes(root)) { matched++; support.push("The entered muscle weakness is compatible with the candidate root, recognizing overlapping myotomes."); }
-    else contradictions.push("The entered weakness pattern does not clearly localize to the candidate root.");
-  } else if (objectiveRoots.length && !root) missing.push("Multilevel/central disease requires muscle-by-muscle correlation with each candidate level rather than a single-root match.");
-
-  if (input.sensoryRoot !== "none" && input.sensoryRoot !== "not-tested" && input.sensoryRoot !== "non-dermatomal" && root) {
-    assessable++;
-    if (input.sensoryRoot === root) { matched++; support.push("The sensory distribution is compatible with the candidate root, while dermatomal overlap limits specificity."); }
-    else contradictions.push("The sensory distribution does not clearly match the candidate root.");
-  }
-  if (input.sensoryRoot === "non-dermatomal") alternatives.push("Peripheral neuropathy, central sensitization, or another non-root process");
-
-  if (input.hipExamAbnormal || input.groinPain) {
-    alternatives.push("Hip pathology or hip-spine syndrome");
-    contradictions.push("Groin pain or an abnormal hip examination raises a competing pain generator.");
-    diagnosticNextSteps.push("Complete hip range-of-motion/provocative testing and obtain hip imaging or diagnostic injection only when it would change management.");
-    evidenceIds.add("NICE-NG59");
-  }
-  if (input.pulsesAbnormal || (input.painPattern === "claudication" && !input.sittingRelieves && !input.flexionRelieves)) alternatives.push("Vascular claudication");
-  if (input.inflammatoryFeatures) alternatives.push("Inflammatory axial disease");
-  if (input.painPattern === "axial") alternatives.push("Facet-mediated, sacroiliac, myofascial, discogenic, or nonspecific low-back pain");
-
-  if (input.stenosisSeverity === "severe") support.push("Severe narrowing is present, but severity alone does not establish symptom causation or treatment indication.");
-  if (input.stenosisSeverity === "mild" && (objectiveRoots.length || input.progressiveWeakness)) contradictions.push("Objective or progressive weakness with only mild reported narrowing warrants direct image review and consideration of another level or diagnosis.");
-  if (input.imagingAgeMonths > 12 || (input.imagingAgeMonths > 3 && input.progressiveWeakness)) missing.push("Imaging may not reflect the current neurologic status; repeat imaging is reasonable only if it is expected to change management.");
-  if (input.imagingLevel === "multilevel" || input.imagingFinding === "central-stenosis") missing.push("Record each candidate level, side, and zone of compression; a single multilevel label is inadequate for procedural targeting.");
-
-  if (input.injectionResponse !== "not-tried") {
-    const injectionTargetKnown = input.injectionLevel !== "unknown" && input.injectionSide !== "unknown";
-    if (!injectionTargetKnown) missing.push("Injection interpretation requires the injected level, side, technique, medication, immediate response, and duration.");
-    if (input.injectionResponse === "sustained") support.push("Sustained meaningful benefit may support continued nonsurgical care when neurologic status is stable and goals are being met.");
-    else if (input.injectionResponse === "none") contradictions.push("Lack of injection benefit does not exclude a diagnosis but reduces confidence in that specific therapeutic strategy or target.");
-  }
-
-  if (urgency === "routine") {
-    nonoperativePathway.push("Use education, activity guidance, and an individualized exercise-based program when appropriate; reassess function and neurologic status over time.");
-    if (!input.completedExerciseProgram) nonoperativePathway.push("A structured exercise-based program has not been documented; this is not a universal prerequisite when neurologic or other urgent circumstances exist.");
-    if (input.injectionResponse === "not-tried" && input.painPattern === "radicular") nonoperativePathway.push("An epidural or selective injection may be considered for selected patients as a therapeutic trial; it should not be treated as a definitive diagnostic test.");
-  }
-
-  const localizationContradiction = contradictions.some(x => /laterality|usual exiting|weakness pattern|sensory distribution/.test(x));
-  const clinicalImagingCoherent = !localizationContradiction && assessable >= 2 && matched / assessable >= 0.5;
-  if (!clinicalImagingCoherent) surgicalDecision.push("Do not finalize a level-specific invasive procedure from the current fields; reconcile symptom distribution, objective examination, and direct image review first.");
-  if (input.progressiveWeakness) {
-    surgicalDecision.push("Progressive objective weakness warrants expedited spine-surgeon assessment. When a surgically remediable compressive lesion is concordant, decompression may be time-sensitive and should not be delayed solely to complete an arbitrary duration of nonoperative care.");
-  } else if (urgency === "routine" && clinicalImagingCoherent && input.symptomDurationWeeks >= 6 && (input.legPain > input.backPain || input.painPattern === "claudication")) {
-    surgicalDecision.push("Elective surgical consultation is reasonable when function-limiting leg symptoms persist despite appropriate care and direct image review confirms a concordant surgically remediable lesion.");
-  }
-  if (input.painPattern === "axial") { surgicalDecision.push("Predominantly axial pain is outside the validated operative scope of this prototype. Do not generate a decompression or fusion recommendation; use a separate diagnosis-specific assessment pathway."); operativeOptions.length = 0; }
-
-  surgicalPrerequisites.push("Direct clinician review of the actual MRI/CT images, not the radiology report alone.");
-  if (!input.actualImagesReviewed) missing.push("Actual images have not been confirmed as reviewed; do not finalize an invasive target from report text alone.");
-  if ((input.imagingLevel === "multilevel" || input.imagingFinding === "central-stenosis") && !input.levelByLevelDocumented) missing.push("Complete the level-by-level imaging matrix before selecting an operative target.");
-  if (input.imageQuality !== "adequate") missing.push("Document whether image quality is adequate for level-, side-, and zone-specific interpretation.");
-  surgicalPrerequisites.push("Documented concordance among symptoms, side, level/zone, and objective neurologic or claudication findings.");
-  surgicalPrerequisites.push("A patient-centered discussion of expected benefit, uncertainty, alternatives, recovery, and the possibility of persistent back or leg symptoms.");
-  if (input.imagingFinding === "disc") { operativeOptions.push("For concordant persistent radiculopathy from a focal lumbar disc herniation, limited discectomy/microdiscectomy may be considered; expected benefit is primarily faster leg-pain relief rather than guaranteed back-pain resolution."); evidenceIds.add("SPORT-LDH"); }
-  if (input.imagingFinding === "lateral-recess" || input.imagingFinding === "central-stenosis") operativeOptions.push("For concordant symptomatic stenosis, nerve-preserving decompression (laminotomy/laminectomy with lateral-recess decompression as needed) is the core operative concept; approach and extent depend on levels and anatomy.");
-  if (input.imagingFinding === "foraminal" || input.imagingFinding === "extraforaminal") operativeOptions.push("For concordant foraminal/extraforaminal compression, targeted foraminotomy or decompression may be considered; fusion is not automatic and depends on collapse, instability, deformity, and the facet resection required.");
-  if (input.imagingLevel === "multilevel") operativeOptions.push("Multilevel surgery requires level-by-level justification; do not decompress every radiographically abnormal level without clinical correlation.");
-  operativeRisks.push("Discuss dural tear, nerve injury, infection, hematoma, venous thromboembolism, medical complications, persistent or recurrent symptoms, and reoperation; risk varies by procedure and patient factors.");
-  if (input.priorLumbarSurgery) operativeRisks.push("Revision surgery may have higher technical complexity and risk, including scar-related dural injury; obtain prior operative details and assess recurrent versus adjacent pathology.");
-
-  let fusionAssessment = "The form does not establish an indication for fusion. Operative choice requires diagnosis-specific review of instability, slip morphology, foraminal collapse, deformity, prior surgery, planned facet removal, bone quality, and patient risk.";
-  if (input.spondylolisthesis) {
-    evidenceIds.add("NORDSTEN-5Y");
-    if (input.dynamicInstability === "absent" && !input.deformityPresent && input.plannedFacetResection !== "substantial") { fusionAssessment = "For many patients with stenosis and degenerative spondylolisthesis without a compelling instability, deformity, severe foraminal-collapse, or expected iatrogenic-instability mechanism, randomized trials support decompression alone as a reasonable option. This does not exclude fusion for selected anatomy or revision circumstances."; evidenceIds.add("SWEDISH-LSS"); }
-    else if (input.dynamicInstability === "present" || input.deformityPresent || input.plannedFacetResection === "substantial" || input.foraminalCollapse === "present") fusionAssessment = "Fusion may be considered only when a coherent operative target is present together with an independent mechanism such as clinically meaningful instability, deformity, severe foraminal collapse, revision-related instability, or expected iatrogenic instability. Prior surgery or deformity alone is not sufficient, and no single threshold is automatic.";
-    else missing.push("Clarify slip grade/morphology, standing and dynamic imaging, foraminal collapse, deformity, and expected facet resection before discussing fusion.");
-  }
-
-  if (input.smoking) { evidenceIds.add("CNS-RISK"); optimization.push("Smoking is a modifiable risk relevant to wound healing and fusion success; document cessation counseling when surgery is considered."); }
-  if (input.diabetes && input.a1c >= 7.5) { evidenceIds.add("CNS-RISK"); optimization.push("Glycemic control may increase perioperative risk; coordinate optimization rather than using a universal HbA1c cutoff in isolation."); }
-  if (input.bmi >= 35) optimization.push("Obesity may increase perioperative complexity and complication risk; discuss individualized risk and optimization without using BMI alone to deny care.");
-  if (input.frailty === "moderate" || input.frailty === "severe") optimization.push("Frailty warrants formal perioperative risk assessment, discharge planning, and shared decision-making.");
-  if (input.boneHealth === "unknown" && (input.age >= 65 || input.osteoporosisRisk || input.spondylolisthesis)) optimization.push("Assess bone health when instrumentation is being considered; use DXA, opportunistic CT, and/or vitamin D assessment according to local practice."); evidenceIds.add("CNS-BONE");
-  if (input.boneHealth === "osteoporosis") optimization.push("Osteoporosis requires bone-health optimization and may alter fixation strategy and risk counseling.");
-  if (input.chronicOpioidUse) optimization.push("Document baseline opioid exposure and create a perioperative analgesia/taper plan.");
-  if (input.depressionAnxietyConcern) optimization.push("Psychological distress can affect recovery and should be assessed and treated without implying that symptoms are non-organic.");
-  if (input.anticoagulation) optimization.push("Anticoagulation management requires procedure-specific coordination and should not be automated by this prototype.");
-
-  if (input.recentTrauma || input.osteoporosisRisk || input.chronicSteroidUse) diagnosticNextSteps.push("Use fracture-oriented imaging when clinical suspicion is present; modality depends on trauma severity, neurologic findings, and local protocol.");
-  if (serious.infection) diagnosticNextSteps.push("Urgent laboratory evaluation and contrast-enhanced MRI are commonly considered when spinal infection is suspected, guided by local protocol.");
-  if (serious.cancer) diagnosticNextSteps.push("Use an urgent malignancy pathway and appropriate MRI when cancer-related spinal pathology is suspected.");
-  if (urgency === "routine" && input.symptomDurationWeeks < 6 && !input.progressiveWeakness) diagnosticNextSteps.push("Routine early imaging is generally not indicated for uncomplicated acute low-back pain/radiculopathy without red flags.");
-  evidenceIds.add("ACR-LBP");
-
-  let reconciliation: DecisionOutput["reconciliation"] = "insufficient";
-  if (assessable >= 2) {
-    const ratio = matched / assessable;
-    reconciliation = ratio === 1 && contradictions.length === 0 ? "concordant" : ratio >= 0.5 && contradictions.length <= 2 ? "partially-concordant" : "discordant";
-  }
-  const reconciliationNarrative = `${matched} of ${assessable} assessable domains matched. This is a transparent reconciliation checklist, not a diagnostic probability, surgical indication, or authorization criterion.`;
-
-  const checks: Check[] = [
-    { label: "Emergency and serious-pathology screen", status: urgency === "routine" ? "met" : "review", rationale: urgencyReason },
-    { label: "Syndrome characterized", status: input.painPattern === "uncertain" ? "missing" : "met", rationale: "A syndrome label should be supported by symptom behavior, objective findings, and alternatives." },
-    { label: "Clinical–imaging laterality reconciled", status: side === "match" ? "met" : side === "not-assessable" ? "missing" : "review", rationale: "Laterality mismatch lowers confidence in a level-specific pain generator." },
-    { label: "Root/level relationship assessable", status: root ? "met" : "review", rationale: "Central and multilevel disease cannot be reduced to one root without level-by-level review." },
-    { label: "Bilateral objective neurologic examination documented", status: [input.rightHipFlexion,input.leftHipFlexion,input.rightKneeExtension,input.leftKneeExtension,input.rightAnkleDorsiflexion,input.leftAnkleDorsiflexion,input.rightGreatToeExtension,input.leftGreatToeExtension,input.rightPlantarFlexion,input.leftPlantarFlexion].some(x=>x==="not-tested") ? "missing" : "met", rationale: "Side-specific muscle testing and weakness quality are required for reliable concordance." },
-    { label: "Competing hip/vascular/peripheral sources addressed", status: (input.hipExamAbnormal || input.pulsesAbnormal || input.sensoryRoot === "non-dermatomal") ? "review" : "met", rationale: "Alternative pain generators are common and may coexist." },
-    { label: "Imaging current and intervention-relevant", status: input.imagingAgeMonths > 12 ? "review" : "met", rationale: "Repeat imaging is justified when it is likely to change management, not by age alone." },
-    { label: "Patient goal and prior care documented", status: input.patientGoal.trim() && (input.completedExerciseProgram || urgency !== "routine") ? "met" : "review", rationale: "Treatment should be linked to function, preferences, and prior care." },
-    { label: "Surgical optimization assessed", status: optimization.length ? "review" : "met", rationale: "Modifiable risk and bone health should be addressed when surgery is considered." },
-  ];
-
-  return { urgency, urgencyReason, syndrome, reconciliation, reconciliationNarrative, support, contradictions, missing, alternatives: [...new Set(alternatives)], diagnosticNextSteps: [...new Set(diagnosticNextSteps)], nonoperativePathway, surgicalDecision, fusionAssessment, operativeOptions: [...new Set(operativeOptions)], surgicalPrerequisites: [...new Set(surgicalPrerequisites)], operativeRisks: [...new Set(operativeRisks)], optimization, checks, evidenceIds: [...evidenceIds] };
+const roots:Record<LumbarLevel,{exit:Root;trav:Root}>={"L1-2":{exit:"L1",trav:"L2"},"L2-3":{exit:"L2",trav:"L3"},"L3-4":{exit:"L3",trav:"L4"},"L4-5":{exit:"L4",trav:"L5"},"L5-S1":{exit:"L5",trav:"S1"}};
+const sev=(x:Severity)=>x==="severe"?3:x==="moderate"?2:x==="mild"?1:0;
+const grade=(g:MotorGrade)=>g==="5"?5:g==="4+"?4.5:g==="4"?4:g==="3"?3:g==="2"?2:g==="1"?1:g==="0"?0:5;
+function motorDeficit(i:CaseInput){const vals=[i.rightHipFlexion,i.leftHipFlexion,i.rightKneeExtension,i.leftKneeExtension,i.rightAnkleDorsiflexion,i.leftAnkleDorsiflexion,i.rightGreatToeExtension,i.leftGreatToeExtension,i.rightPlantarFlexion,i.leftPlantarFlexion].map(grade);return Math.min(...vals)}
+function neurologicSeverity(i:CaseInput):DecisionOutput["neurologicSeverity"]{const m=motorDeficit(i);if(i.progressiveWeakness||m<=3||i.bilateralSevereDeficit)return"severe";if(m===4||i.heelWalkAbnormal||i.toeWalkAbnormal||i.repeatedHeelRaiseAbnormal)return"moderate";if(m===4.5||i.rightSensoryRoot!=="none"||i.leftSensoryRoot!=="none"||i.rightPatellarReflex!=="normal"||i.leftPatellarReflex!=="normal"||i.rightAchillesReflex!=="normal"||i.leftAchillesReflex!=="normal")return"mild";return"none"}
+function scope(i:CaseInput):Applicability{const r:string[]=[];if(i.pediatric||i.age<18)r.push("Pediatric patient");if(i.pregnant)r.push("Pregnancy-related evaluation");if(i.cervicalThoracicSymptoms)r.push("Predominant cervical or thoracic symptoms");if(i.neuromuscularDisease)r.push("Neuromuscular disease");if(i.tumorKnown||i.infectionKnown||i.acuteFractureKnown)r.push("Known tumor, infection, or acute fracture");if(i.priorLongFusion)r.push("Prior long-segment fusion or complex revision anatomy");if(i.slipType==="high-grade"||i.slipType==="isthmic")r.push("High-grade or isthmic spondylolisthesis");if(i.deformityPresent&&(i.coronalCobbDegrees>=20||i.sagittalImbalancePresent))r.push("Major deformity");if(i.painPattern==="axial")r.push("Predominantly axial pain is outside the operative recommendation scope");return r.length?{status:r.some(x=>x.includes("Known")||x.includes("Pediatric")||x.includes("cervical")||x.includes("Neuromuscular"))?"out-of-scope":"limited",reasons:r}:{status:"appropriate",reasons:[]}}
+function candidates(i:CaseInput):CandidateTarget[]{const out:CandidateTarget[]=[];for(const f of i.imagingMatrix){const zones:[string,Severity,string,Root][]=[["right lateral recess",f.rightRecess,"right",roots[f.level].trav],["left lateral recess",f.leftRecess,"left",roots[f.level].trav],["right foramen",f.rightForamen,"right",roots[f.level].exit],["left foramen",f.leftForamen,"left",roots[f.level].exit],["central canal",f.central,"bilateral",roots[f.level].trav]];for(const [zone,s,side,root] of zones){if(sev(s)===0)continue;let score=sev(s)*18;const yes:string[]=[];const no:string[]=[];if(i.side===side||i.side==="bilateral"||side==="bilateral"){score+=18;yes.push("Laterality is compatible")}else{score-=20;no.push("Laterality conflicts")};if(i.suspectedRoot===root||i.suspectedRoot==="multiroot"){score+=20;yes.push(`Suspected root includes ${root}`)}else if(i.suspectedRoot!=="none"){score-=10;no.push(`Suspected root is ${i.suspectedRoot}`)};const sensory=(side==="right"?i.rightSensoryRoot:i.leftSensoryRoot);if(sensory===root){score+=12;yes.push("Sensory distribution supports the root")};if((root==="L5"&&i.heelWalkAbnormal)||(root==="S1"&&(i.toeWalkAbnormal||i.repeatedHeelRaiseAbnormal))){score+=12;yes.push("Functional motor test supports the root")};if(i.hipExamAbnormal){score-=10;no.push("Abnormal hip examination is a competing source")};if(i.pulsesAbnormal){score-=12;no.push("Abnormal vascular examination is a competing source")};if(f.rootDeformation){score+=8;yes.push("Root deformation documented")};out.push({level:f.level,side,root,zone,score:Math.max(0,Math.min(100,score)),for:yes,against:no})}}return out.sort((a,b)=>b.score-a.score).slice(0,5)}
+export function validateCase(i:CaseInput){const e:string[]=[];if(!i.patientGoal.trim())e.push("Document the patient-defined goal.");if(!i.actualImagesReviewed)e.push("Confirm direct image review or document why it is unavailable.");if(!i.levelByLevelDocumented)e.push("Complete the level-by-level imaging matrix.");if(i.examConfidence==="low")e.push("Repeat or confirm the neurologic examination because confidence is low.");return e}
+export function evaluateCase(i:CaseInput):DecisionOutput{
+ const app=scope(i), neuro=neurologicSeverity(i), target=candidates(i), top=target[0]; const emergency=i.urinaryRetention||i.urinarySensationLoss||i.overflowIncontinence||i.saddleAnesthesia||i.bilateralSevereDeficit||(i.postVoidResidualMl>=300&&i.urinaryInitiationDifficulty);const infection=i.fever&&(i.bacteremiaOrRecentInfection||i.immunosuppression||i.recentProcedure);const cancer=i.cancerHistory&&(i.nightRestPain||i.unexplainedWeightLoss);const fracture=i.recentTrauma&&(i.osteoporosisRisk||i.chronicSteroidUse||i.age>=65);
+ const urgency=emergency?"emergency":(i.progressiveWeakness||infection||cancer||fracture)?"urgent":"routine";const urgencyReason=emergency?"Possible cauda equina compression or severe bilateral neurologic deterioration requires immediate local emergency assessment and urgent imaging review.":i.progressiveWeakness?"Progressive objective weakness warrants expedited specialist assessment.":infection||cancer||fracture?"Serious-pathology warning features require expedited diagnostic evaluation.":"No emergency feature was identified by the entered data; routine timing still requires clinician confirmation.";
+ const syndrome=i.painPattern==="claudication"?"Probable neurogenic claudication":i.painPattern==="radicular"?"Probable lumbar radiculopathy":i.painPattern==="mixed"?"Mixed radicular/claudicant syndrome":i.painPattern==="axial"?"Axial-predominant low-back pain":"Syndrome uncertain";
+ let reconciliation:DecisionOutput["reconciliation"]="insufficient";if(top){reconciliation=top.score>=70?"concordant":top.score>=45?"partially-concordant":"discordant"}
+ const support:string[]=[];const contradictions:string[]=[];const missing:string[]=[];if(top) support.push(`Highest-ranked target: ${top.side} ${top.root} at ${top.level} ${top.zone} (${top.score}/100 structured concordance score).`,...top.for);if(top) contradictions.push(...top.against);if(i.imageQuality!=="adequate")missing.push("Imaging quality is limited or unknown.");if(i.dynamicInstability==="unknown")missing.push("Dynamic instability is unknown.");if(i.examConfidence!=="high")missing.push("Neurologic examination confidence is not high.");if(i.imagingAgeMonths>12)missing.push("Imaging is older than 12 months; determine whether it still represents current symptoms.");
+ const alternatives:string[]=[];if(i.hipExamAbnormal||i.groinPain)alternatives.push("Hip pathology");if(i.pulsesAbnormal||i.reliefPattern==="stopping-only")alternatives.push("Vascular claudication");if(i.neuropathyFeatures)alternatives.push("Peripheral neuropathy");if(i.painPattern==="axial")alternatives.push("Facet, sacroiliac, discogenic, endplate, or nonspecific chronic low-back pain mechanisms");
+ const diagnosticNextSteps:string[]=[];if(app.status!=="appropriate")diagnosticNextSteps.push("Use the appropriate specialty or emergency pathway because this case is outside or at the edge of the validated module scope.");if(!top||reconciliation==="discordant")diagnosticNextSteps.push("Reassess level, side, root, hip, vascular, and peripheral nerve localization before an invasive procedure.");if(i.imagingLevel==="multilevel")diagnosticNextSteps.push("Perform level-by-level clinical–imaging reconciliation; do not treat every abnormal level.");
+ const nonoperativePathway:string[]=[];if(urgency==="routine")nonoperativePathway.push("Shared decision-making with activity modification and individualized exercise-based rehabilitation.","Medication strategy based on contraindications and prior response.");if(i.injectionResponse==="not-tried"&&i.painPattern!=="axial"&&reconciliation!=="discordant")nonoperativePathway.push("A targeted diagnostic/therapeutic injection may be considered; response does not independently prove the symptomatic level.");
+ const surgicalDecision:string[]=[];if(app.status==="appropriate"&&urgency!=="emergency"&&top&&top.score>=55&&(i.symptomDurationWeeks>=6||neuro==="moderate"||neuro==="severe"))surgicalDecision.push("Surgical consultation is potentially reasonable after clinician confirmation of the target and patient preference.");else surgicalDecision.push("A routine elective surgical recommendation is not established by the current data.");
+ const independent=i.dynamicInstability==="present"||i.foraminalCollapse==="present"||i.plannedFacetResection==="substantial"||(i.deformityPresent&&(i.coronalCobbDegrees>=20||i.sagittalImbalancePresent));const fusionAssessment=independent&&top&&top.score>=55?"An independent fusion rationale may be present, but it requires direct confirmation of instability, deformity, collapse, revision-related instability, or anticipated iatrogenic instability. Fusion is not supported merely by stenosis, back pain, prior surgery, facet disease, or a mild stable degenerative slip.":"Decompression-first reasoning is favored. No independent fusion rationale is established from the entered data.";
+ const operativeOptions:string[]=[];if(top&&top.score>=55){operativeOptions.push(`Targeted decompression consideration at ${top.level}, ${top.side} ${top.zone}, addressing the ${top.root} root.`);if(i.imagingFinding==="disc")operativeOptions.push("Limited discectomy/microdiscectomy may be considered when disc morphology and symptoms are concordant.");if(i.imagingFinding==="foraminal"||i.imagingFinding==="extraforaminal")operativeOptions.push("Foraminotomy or far-lateral decompression may be considered based on direct image review and facet preservation.")}
+ const optimization:string[]=[];if(i.smoking)optimization.push("Smoking cessation counseling");if(i.diabetes&&i.a1c>=8)optimization.push("Improve glycemic control");if(i.anemia)optimization.push("Evaluate and treat anemia");if(i.albumin>0&&i.albumin<3.5)optimization.push("Nutritional assessment");if(i.boneHealth==="osteoporosis"||i.osteoporosisRisk)optimization.push("Bone-health evaluation before instrumentation");if(i.chronicOpioidUse)optimization.push("Preoperative opioid strategy");
+ const riskSummary:string[]=[];if(i.frailty==="moderate"||i.frailty==="severe")riskSummary.push("Frailty increases perioperative vulnerability");if(i.cardiopulmonaryDisease)riskSummary.push("Cardiopulmonary comorbidity requires procedure-specific risk assessment");if(i.anticoagulation)riskSummary.push("Anticoagulation requires coordinated peri-procedural planning");if(!riskSummary.length)riskSummary.push("No major risk factor was triggered by the structured fields; formal procedure-specific assessment remains necessary.");
+ const goalAligned=i.treatmentPreference==="nonoperative"&&surgicalDecision[0].startsWith("Surgical")?"The current surgical-consultation pathway may not align with the stated preference for nonoperative care; use shared decision-making.":`The proposed pathway should be discussed in relation to the goal: ${i.patientGoal}`;
+ const ruleTrace:RuleTrace[]=[{ruleId:"SAFE-001",finding:urgencyReason,basis:"Emergency neurologic and serious-pathology screen",strength:"consensus"},{ruleId:"LOC-001",finding:top?`Candidate ${top.root} target at ${top.level}`:"No target established",basis:"Level, zone, side, motor, sensory, reflex, and competing-source reconciliation",strength:"moderate"},{ruleId:"FUS-001",finding:fusionAssessment,basis:"Decompression-first interpretation for many patients with stenosis and low-grade degenerative slip",strength:"high"},{ruleId:"SCOPE-001",finding:`Applicability: ${app.status}`,basis:"Prespecified intended-use population and exclusions",strength:"consensus"}];
+ const checks=[{label:"Intended-use population",status:app.status==="appropriate"?"met":app.status==="limited"?"review":"missing",rationale:app.reasons.join("; ")||"Within the initial degenerative lumbar scope."},{label:"Direct image review",status:i.actualImagesReviewed?"met":"missing",rationale:"The tool must not replace direct image review."},{label:"Level-by-level matrix",status:i.levelByLevelDocumented?"met":"missing",rationale:"Multilevel abnormalities require zone- and side-specific review."},{label:"Patient goal and preference",status:i.patientGoal&&i.treatmentPreference?"met":"missing",rationale:"Treatment decisions should incorporate goals and preference."}] as DecisionOutput["checks"];
+ return {urgency,urgencyReason,syndrome,neurologicSeverity:neuro,reconciliation,reconciliationNarrative:top?`The highest-ranked structured target is ${top.side} ${top.root} at ${top.level} ${top.zone}. This is a reconciliation result, not a confirmed diagnosis.`:"No level-root target could be established.",applicability:app,candidateTargets:target,support,contradictions,missing,alternatives,diagnosticNextSteps,nonoperativePathway,surgicalDecision,fusionAssessment,operativeOptions,surgicalPrerequisites:["Direct review of current imaging","Confirmation of side, root, and functional deficit","Patient-centered discussion of alternatives and expectations","Separate medical and anesthetic risk assessment"],operativeRisks:["Dural tear","Neural injury","Infection","Persistent or recurrent symptoms","Reoperation","Instability after decompression when relevant"],optimization,patientGoalAlignment:goalAligned,riskSummary,ruleTrace,evidenceIds:["NASS-LDH","NASS-LSS","NORDSTEN-5Y","SWEDISH-LSS","ACR-LBP","CES-PATH","CNS-RISK"],checks}
 }
