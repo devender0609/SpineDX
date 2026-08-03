@@ -99,4 +99,25 @@ injectionComplete.injectionLevel="L4-5";
 injectionComplete.injectionSide="right";
 assert.ok(!validateCaseInput(injectionComplete).some(x=>x.id==="injection-level-missing"||x.id==="injection-side-missing"));
 
-console.log("v27.4 engine and validation tests passed");
+
+const trajectoryConflict=createDemoCase();
+trajectoryConflict.progressiveWeakness="absent";
+trajectoryConflict.weaknessTrajectory="progressive";
+assert.ok(validateCaseInput(trajectoryConflict).some(x=>x.id==="trajectory-safety-conflict"&&x.severity==="error"));
+r=evaluateCase(trajectoryConflict);
+assert.equal(r.urgency,"indeterminate");
+assert.ok(r.missing.some(x=>x.includes("progressive weakness")));
+
+const unsupportedProposedLevel=createDemoCase();
+unsupportedProposedLevel.proposedProcedure="decompression";
+unsupportedProposedLevel.proposedLevels=["L3-4"];
+assert.ok(validateCaseInput(unsupportedProposedLevel).some(x=>x.id==="proposed-level-L3-4-imaging-missing"&&x.severity==="error"));
+
+const noFusionEvidence=createDemoCase();
+noFusionEvidence.proposedProcedure="decompression";
+r=evaluateCase(noFusionEvidence);
+assert.ok(!r.ruleTrace.some(x=>x.ruleId==="FUS-001"));
+assert.ok(!r.highlights.some(x=>x.ruleId==="FUS-001"));
+assert.equal(r.concordance.length,5);
+
+console.log("v27.5 logic, synthesis, and validation tests passed");

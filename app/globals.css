@@ -60,3 +60,29 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .literature-card a{padding:.52rem .75rem;border-radius:8px;background:var(--blue2)}
 @media(max-width:1100px){.executive-grid .highlight:first-child{grid-column:span 1}}
 @media(max-width:700px){.context-note{display:block}.context-note b{display:block;margin-bottom:4px}.mode-nav{border-radius:0;margin-left:0;margin-right:0}.field input,.field select,.field textarea{min-height:48px}}
+
+
+/* v27.5 logic-first synthesis and fixed visual hierarchy */
+.field-note{display:block;color:var(--muted);font-size:.72rem;line-height:1.35;margin-top:5px}
+.executive-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.executive-grid .highlight{min-height:142px;padding:18px}
+.executive-grid .highlight:first-child{grid-column:1/-1;min-height:auto;border-width:2px;border-top-width:6px}
+.executive-grid .highlight p{font-size:.94rem;line-height:1.55;margin:.9rem 0 0}
+.concordance-table{overflow:hidden;border:1px solid var(--line);border-radius:12px}
+.concordance-head,.concordance-row{display:grid;grid-template-columns:170px minmax(0,1fr) 120px;gap:14px;align-items:center;padding:12px 14px}
+.concordance-head{background:var(--navy);color:#fff;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+.concordance-row{border-top:1px solid var(--line);background:#fff}
+.concordance-row:nth-child(odd){background:#f8fbff}
+.concordance-row>span:nth-child(2){color:#34425b;line-height:1.4}
+.concordance-status{justify-self:start;display:inline-flex;padding:.32rem .58rem;border-radius:999px;font-size:.73rem;font-weight:850}
+.concordance-status.support{background:var(--greenbg);color:var(--green)}
+.concordance-status.conflict{background:var(--amberbg);color:var(--amber)}
+.concordance-status.missing{background:var(--redbg);color:var(--red)}
+.concordance-status.neutral{background:var(--slatebg);color:var(--slate)}
+.next-step-card{border-left:5px solid var(--blue);background:linear-gradient(135deg,#fff,#f6f9ff)}
+.next-step-card .finding-list{columns:2;column-gap:36px}
+.next-step-card li{break-inside:avoid}
+.two-col-results{align-items:start}
+.result-details>.three-col-results{grid-template-columns:repeat(2,minmax(0,1fr))}
+.rule-table article{background:#fff}
+@media(max-width:800px){.executive-grid{grid-template-columns:1fr}.executive-grid .highlight:first-child{grid-column:auto}.concordance-head{display:none}.concordance-row{grid-template-columns:1fr;gap:6px}.concordance-row b:before{content:"Domain: ";color:var(--muted);font-weight:600}.next-step-card .finding-list{columns:1}.result-details>.three-col-results{grid-template-columns:1fr}}
