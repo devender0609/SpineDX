@@ -5,3 +5,21 @@
 @media(max-width:700px){.review-summary,.executive-grid{grid-template-columns:1fr}.card-heading{align-items:flex-start}.level-picker button{flex:1 1 30%}}
 
 .module-scope{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:14px 16px;margin-bottom:16px;border:1px solid var(--line);border-radius:12px;background:var(--blue2)}.module-scope div{display:flex;flex-direction:column;gap:3px}.module-scope small{color:var(--muted);font-weight:700}.module-scope strong{font-size:1.08rem;color:var(--blue)}.module-scope p{margin:0;max-width:680px;color:#314261;font-size:.86rem}@media(max-width:700px){.module-scope{display:block}.module-scope p{margin-top:8px}}
+
+/* v27.3 alignment and evidence-library refinements */
+.grid.three{align-items:start}
+.field{height:100%}
+.level-checks{display:grid;grid-template-columns:repeat(3,minmax(92px,1fr));gap:10px;width:100%}
+.level-checks label{display:grid;grid-template-columns:20px 1fr;align-items:center;gap:8px;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;white-space:nowrap}
+.level-checks input[type=checkbox]{width:18px;height:18px;margin:0;accent-color:var(--blue)}
+.field>.level-checks{margin-top:0}
+.literature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.literature-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+.literature-card h3{margin:.55rem 0 .6rem;font-size:1.08rem}
+.literature-card p{color:var(--muted);line-height:1.55;margin:.5rem 0 1rem}
+.literature-card a{display:inline-flex;font-weight:800;color:var(--blue);text-decoration:none}
+.literature-card a:hover{text-decoration:underline}
+.literature-meta{display:flex;flex-wrap:wrap;gap:7px}
+.literature-meta span{font-size:.72rem;font-weight:800;color:var(--slate);background:var(--slatebg);padding:.3rem .5rem;border-radius:999px}
+.evidence-notice{display:flex;flex-direction:column;gap:5px;padding:14px 16px;margin-bottom:16px;background:var(--blue2);border-left:4px solid var(--blue);border-radius:10px;color:#314261}
+@media(max-width:900px){.literature-grid{grid-template-columns:1fr}.level-checks{grid-template-columns:1fr}}
