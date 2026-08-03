@@ -1,16 +1,14 @@
-# SpineDx-Tx v26.2
+# SpineDx-Tx v27.0
 
-Clinician-facing lumbar clinical–imaging reconciliation research prototype.
+Clinician-centered lumbar clinical–imaging reconciliation prototype.
 
-This release corrects clinical field semantics and option labeling. Internal coded values remain stable for research exports, while the UI uses meaningful labels such as Yes, No, Unknown, Not assessed, and Not applicable.
+This release adds a simplified pathway-driven interface, conditional clinical fields, one-screen synthesis, direct primary-region selection, structured range/context/cross-field validation, and a separate research workspace.
 
 Run:
 
-```powershell
+```bash
 npm install
 npm run test:engine
 npm run typecheck
 npm run build
 ```
-
-This is not a validated autonomous diagnostic or treatment system.

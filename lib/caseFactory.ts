@@ -37,7 +37,7 @@ export function createBlankFusionMatrix(): FusionLevelFinding[] {
 
 export function createBlankCase(): CaseInput {
   return {
-    studyId: "",
+    studyId: "", primaryRegion: "not-assessed",
     age: missingMeasurement("years"), sexAtBirth: "unknown", symptomDurationWeeks: missingMeasurement("weeks"), side: "not-assessed",
     clinicianPhenotype: "not-assessed", clinicianSuspectedRoot: "not-assessed", backPainNrs: missingMeasurement("0-10"), legPainNrs: missingMeasurement("0-10"),
     walkingLimitMeters: missingMeasurement("m"), patientGoal: "", treatmentPreference: "not-assessed",
@@ -67,7 +67,7 @@ export function createBlankCase(): CaseInput {
 
 export function createDemoCase(): CaseInput {
   const c = createBlankCase();
-  c.studyId = "DEMO-001";
+  c.studyId = "DEMO-001"; c.primaryRegion = "lumbar";
   c.age = measured(66, "years"); c.sexAtBirth = "female"; c.symptomDurationWeeks = measured(32, "weeks"); c.side = "right";
   c.clinicianPhenotype = "radicular"; c.clinicianSuspectedRoot = "L5"; c.backPainNrs = measured(4, "0-10"); c.legPainNrs = measured(8, "0-10");
   c.walkingLimitMeters = measured(150, "m"); c.patientGoal = "Walk for 30 minutes with manageable leg pain"; c.treatmentPreference = "undecided";

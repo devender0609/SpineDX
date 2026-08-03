@@ -141,6 +141,8 @@ function targets(i:CaseInput,sy:ReturnType<typeof syndrome>):CandidateTarget[]{
 
 function applicability(i:CaseInput){
   const reasons:string[]=[];
+  if(i.primaryRegion==="not-assessed") reasons.push("primary region not assessed");
+  else if(i.primaryRegion!=="lumbar") reasons.push(`primary region is ${i.primaryRegion.replaceAll("-"," ")}`);
   const outOfScope=[
     ["pregnancy",i.pregnant],["cervical/thoracic symptoms",i.cervicalThoracicSymptoms],["neuromuscular disease",i.neuromuscularDisease],["known tumor",i.knownTumor],["known infection",i.knownInfection],["acute fracture",i.acuteFracture],["major deformity",i.majorDeformity],["prior long fusion",i.priorLongFusion],["predominantly axial pain",i.predominantlyAxialPain]
   ] as [string,ClinicalStatus][];

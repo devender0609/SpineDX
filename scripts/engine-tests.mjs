@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { createBlankCase, createDemoCase, measured } from "../lib/caseFactory.ts";
 import { evaluateCase } from "../lib/decisionEngine.ts";
+import { validateCaseInput } from "../lib/validation.ts";
 
 const blank=createBlankCase();
+assert.equal(blank.primaryRegion,"not-assessed");
 assert.equal(blank.standingProvokes,"not-assessed");
 assert.equal(blank.smokingStatus,"not-assessed");
 assert.equal(blank.age.value,null);
@@ -57,4 +59,22 @@ missingLab.proposedProcedure="fusion"; missingLab.proposedLevels=["L4-5"]; missi
 r=evaluateCase(missingLab);
 assert.ok(r.risk.patientSpecific.some(x=>x.includes("HbA1c is unavailable")));
 
-console.log("v26 engine tests passed");
+const invalidPain=createDemoCase();
+invalidPain.legPainNrs=measured(14,"0-10");
+assert.ok(validateCaseInput(invalidPain).some(x=>x.id==="legPainNrs-range"&&x.severity==="error"));
+
+const fusionWithoutLevel=createDemoCase();
+fusionWithoutLevel.proposedProcedure="fusion";
+fusionWithoutLevel.proposedLevels=[];
+assert.ok(validateCaseInput(fusionWithoutLevel).some(x=>x.id==="fusion-level-missing"&&x.severity==="error"));
+
+const contradictoryHistory=createDemoCase();
+contradictoryHistory.priorSurgeryType="none";
+contradictoryHistory.priorPseudarthrosis="present";
+assert.ok(validateCaseInput(contradictoryHistory).some(x=>x.id==="surgery-history-conflict"&&x.severity==="error"));
+
+const sideMismatch=createDemoCase();
+sideMismatch.side="left";
+assert.ok(validateCaseInput(sideMismatch).some(x=>x.id==="side-mismatch-left"&&x.severity==="warning"));
+
+console.log("v27 engine and validation tests passed");

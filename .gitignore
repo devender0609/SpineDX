@@ -1,8 +1,5 @@
 node_modules
 .next
-.env*
 .vercel
-.DS_Store
-npm-debug.log*
-
 tsconfig.tsbuildinfo
+*.log

@@ -1,6 +1,7 @@
 export type ClinicalStatus = "present" | "absent" | "unknown" | "not-assessed" | "not-applicable";
 export type Confidence = "high" | "moderate" | "low" | "not-assessed";
 export type Laterality = "right" | "left" | "bilateral" | "midline" | "not-assessed";
+export type PrimaryRegion = "lumbar" | "cervical" | "thoracic" | "multiple" | "nonspinal-uncertain" | "not-assessed";
 export type Root = "L4" | "L5" | "S1";
 export type RootOrNone = Root | "multiroot" | "none" | "not-assessed";
 export type LumbarLevel = "L1-2" | "L2-3" | "L3-4" | "L4-5" | "L5-S1";
@@ -38,6 +39,7 @@ export type FusionLevelFinding = {
 
 export type CaseInput = {
   studyId: string;
+  primaryRegion: PrimaryRegion;
   age: Measurement;
   sexAtBirth: "female" | "male" | "intersex" | "unknown";
   symptomDurationWeeks: Measurement;
