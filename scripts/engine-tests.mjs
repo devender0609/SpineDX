@@ -85,4 +85,18 @@ const cervical=createDemoCase();
 cervical.primaryRegion="cervical";
 assert.ok(validateCaseInput(cervical).some(x=>x.id==="region-outside"&&x.severity==="error"));
 
-console.log("v27.1 engine and validation tests passed");
+const injectionMissing=createDemoCase();
+injectionMissing.injectionResponse="brief";
+injectionMissing.injectionLevel="unknown";
+injectionMissing.injectionSide="not-assessed";
+const injectionIssues=validateCaseInput(injectionMissing);
+assert.ok(injectionIssues.some(x=>x.id==="injection-level-missing"));
+assert.ok(injectionIssues.some(x=>x.id==="injection-side-missing"));
+
+const injectionComplete=createDemoCase();
+injectionComplete.injectionResponse="meaningful-temporary";
+injectionComplete.injectionLevel="L4-5";
+injectionComplete.injectionSide="right";
+assert.ok(!validateCaseInput(injectionComplete).some(x=>x.id==="injection-level-missing"||x.id==="injection-side-missing"));
+
+console.log("v27.4 engine and validation tests passed");

@@ -23,3 +23,40 @@
 .literature-meta span{font-size:.72rem;font-weight:800;color:var(--slate);background:var(--slatebg);padding:.3rem .5rem;border-radius:999px}
 .evidence-notice{display:flex;flex-direction:column;gap:5px;padding:14px 16px;margin-bottom:16px;background:var(--blue2);border-left:4px solid var(--blue);border-radius:10px;color:#314261}
 @media(max-width:900px){.literature-grid{grid-template-columns:1fr}.level-checks{grid-template-columns:1fr}}
+
+
+/* v27.4 clinical polish */
+:root{--navy:#15315f;--cyan:#0f6f8f;--focus:rgba(36,87,214,.22)}
+body{background:linear-gradient(180deg,#f7f9fd 0,#f2f6fb 45%,#edf3f9 100%)}
+button,input,select,textarea{transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease,background .16s ease}
+button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 18px rgba(31,45,72,.08)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:0;border-color:var(--blue);box-shadow:0 0 0 4px var(--focus)}
+.topbar{background:rgba(255,255,255,.96);backdrop-filter:blur(12px);box-shadow:0 1px 0 rgba(31,45,72,.04)}
+.brand-mark{background:linear-gradient(145deg,var(--navy),var(--blue) 58%,#6c8ff2)}
+.mode-nav{background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 8px 24px rgba(31,45,72,.06)}
+.mode-nav button{border:0;background:transparent;box-shadow:none}
+.mode-nav button.active{background:linear-gradient(135deg,var(--navy),var(--blue));box-shadow:0 7px 18px rgba(36,87,214,.2)}
+.card{box-shadow:0 12px 34px rgba(31,45,72,.07);border-color:#d8e2ef}
+.card:hover{border-color:#cbd8e8}
+.card-heading{padding-bottom:11px;border-bottom:1px solid #edf1f6}
+.card-title{letter-spacing:-.01em}
+.treatment-card{border-top:4px solid var(--cyan)}
+.field>span{min-height:18px;line-height:1.25;text-transform:none;letter-spacing:.01em}
+.field input,.field select,.field textarea{background:#fff;border-color:#cbd7e6;min-height:44px}
+.field select{background-image:linear-gradient(45deg,transparent 50%,#65758b 50%),linear-gradient(135deg,#65758b 50%,transparent 50%);background-position:calc(100% - 17px) 18px,calc(100% - 12px) 18px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;appearance:none;padding-right:34px}
+.context-note{display:flex;gap:9px;align-items:flex-start;margin-top:14px;padding:12px 14px;border:1px solid #cfe1e8;border-radius:10px;background:#f1fafc;color:#285464;font-size:.82rem}
+.context-note b{white-space:nowrap;color:var(--cyan)}
+.level-checks label{cursor:pointer;transition:border-color .15s ease,background .15s ease,box-shadow .15s ease}
+.level-checks label:hover{border-color:#9fb7d5;background:#f8fbff}
+.level-checks label:has(input:checked){border-color:var(--blue);background:var(--blue2);box-shadow:inset 0 0 0 1px rgba(36,87,214,.08)}
+.issue{align-items:start;box-shadow:none!important;transform:none!important}
+.issue-warning{border-left:4px solid var(--amber)}
+.issue-error{border-left:4px solid var(--red)}
+.issue-info{border-left:4px solid var(--blue)}
+.result-subsection+.result-subsection{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.executive-grid .highlight:first-child{grid-column:span 2;background:linear-gradient(145deg,#fff,#f7faff)}
+.literature-card{position:relative;overflow:hidden}
+.literature-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(var(--blue),var(--cyan))}
+.literature-card a{padding:.52rem .75rem;border-radius:8px;background:var(--blue2)}
+@media(max-width:1100px){.executive-grid .highlight:first-child{grid-column:span 1}}
+@media(max-width:700px){.context-note{display:block}.context-note b{display:block;margin-bottom:4px}.mode-nav{border-radius:0;margin-left:0;margin-right:0}.field input,.field select,.field textarea{min-height:48px}}
