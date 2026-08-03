@@ -177,3 +177,7 @@ body{font-size:15px;line-height:1.5}
   .section-head{display:block}
   .section-head p{margin-top:8px;max-width:none}
 }
+
+/* v27.6.2 consistency refinements */
+.result-actions{flex-wrap:nowrap;align-items:center}.result-actions button{white-space:nowrap;min-height:44px}.two-col-results.single-result{grid-template-columns:1fr}.result-subsection+.result-subsection{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}.result-details>.three-col-results>.card{margin-bottom:0}.clinician-evidence article small:empty{display:none}
+@media(max-width:760px){.result-actions{flex-wrap:wrap}.result-actions button{flex:1 1 145px}}

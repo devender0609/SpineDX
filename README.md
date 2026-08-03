@@ -5,7 +5,7 @@ This build removes cervical, thoracic, multiregion, and nonspinal selections fro
 The underlying schema retains region provenance only for backward-compatible research imports; new clinical cases initialize as lumbar/lumbosacral.
 
 
-## v27.6.1 responsive layout fix
+## v27.6.2 responsive layout fix
 - Restores a full-width six-step navigator above the assessment content on desktop.
 - Uses a two-row grid on tablets and a full-width horizontal scroller on small screens.
 - Removes the accidental narrow left sidebar layout.
