@@ -1,20 +1,16 @@
-# SpineDx-Tx v26
+# SpineDx-Tx v26.2
 
-A transparent, clinician-facing lumbar clinical–imaging reconciliation and research-validation platform.
+Clinician-facing lumbar clinical–imaging reconciliation research prototype.
 
-## Initial intended use
-Adults with suspected L4, L5, or S1 radiculopathy due to disc herniation, lateral-recess stenosis, or foraminal stenosis, and adults with suspected neurogenic claudication due to central lumbar stenosis.
+This release corrects clinical field semantics and option labeling. Internal coded values remain stable for research exports, while the UI uses meaningful labels such as Yes, No, Unknown, Not assessed, and Not applicable.
 
-## Important limitations
-- Research and clinician decision-support prototype; not autonomous diagnosis or treatment.
-- Emergency screening is deterministic and incomplete answers produce indeterminate urgency.
-- Imaging severity alone cannot establish a symptomatic target.
-- Fusion rationale is assessed at the proposed operative level.
-- Risk findings are optimization flags, not individualized probabilities.
-- The synthetic emulator is excluded from this validation build.
+Run:
 
-## Commands
-`npm install`
-`npm run test:engine`
-`npm run typecheck`
-`npm run build`
+```powershell
+npm install
+npm run test:engine
+npm run typecheck
+npm run build
+```
+
+This is not a validated autonomous diagnostic or treatment system.

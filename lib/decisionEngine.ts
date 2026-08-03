@@ -23,7 +23,7 @@ export type DecisionOutput = {
 };
 
 const isPresent=(s:ClinicalStatus)=>s==="present";
-const isAssessed=(s:ClinicalStatus)=>s==="present"||s==="absent";
+const isAssessed=(s:ClinicalStatus)=>s==="present"||s==="absent"||s==="not-applicable";
 const grade=(g:MotorGrade):number|null=>g==="not-tested"?null:g==="4+"?4.5:Number(g);
 const severityValue=(s:Severity)=>s==="none"?0:s==="mild"?1:s==="moderate"?2:s==="severe"?3:null;
 const sideMatches=(caseSide:CaseInput["side"],side:"right"|"left"|"bilateral")=>caseSide==="bilateral"||side==="bilateral"||caseSide===side;
@@ -142,7 +142,7 @@ function targets(i:CaseInput,sy:ReturnType<typeof syndrome>):CandidateTarget[]{
 function applicability(i:CaseInput){
   const reasons:string[]=[];
   const outOfScope=[
-    ["pediatric case",i.pediatric],["pregnancy",i.pregnant],["cervical/thoracic symptoms",i.cervicalThoracicSymptoms],["neuromuscular disease",i.neuromuscularDisease],["known tumor",i.knownTumor],["known infection",i.knownInfection],["acute fracture",i.acuteFracture],["major deformity",i.majorDeformity],["prior long fusion",i.priorLongFusion],["predominantly axial pain",i.predominantlyAxialPain]
+    ["pregnancy",i.pregnant],["cervical/thoracic symptoms",i.cervicalThoracicSymptoms],["neuromuscular disease",i.neuromuscularDisease],["known tumor",i.knownTumor],["known infection",i.knownInfection],["acute fracture",i.acuteFracture],["major deformity",i.majorDeformity],["prior long fusion",i.priorLongFusion],["predominantly axial pain",i.predominantlyAxialPain]
   ] as [string,ClinicalStatus][];
   for(const [label,status] of outOfScope) if(isPresent(status)) reasons.push(label);
   const ageOut=i.age.status==="measured"&&i.age.value!==null&&i.age.value<18; if(ageOut) reasons.push("age under 18 years");

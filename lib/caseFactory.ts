@@ -60,7 +60,7 @@ export function createBlankCase(): CaseInput {
     fragilityFracture: NA, chronicOpioidUse: NA, opioidMme: missingMeasurement("MME/day"), sleepApnea: NA, cpapAdherent: NA, anticoagulation: NA, priorDvtPe: NA,
     cardiopulmonaryDisease: NA, advancedRenalOrLiverDisease: NA, priorSurgeryType: "not-assessed", sameLevelRevision: NA, priorDuralTear: NA, priorInfection: NA, priorPseudarthrosis: NA,
     proposedProcedure: "not-assessed", proposedLevels: [], plannedSetting: "not-assessed",
-    pediatric: NA, pregnant: NA, cervicalThoracicSymptoms: NA, neuromuscularDisease: NA, knownTumor: NA, knownInfection: NA, acuteFracture: NA,
+    pregnant: NA, cervicalThoracicSymptoms: NA, neuromuscularDisease: NA, knownTumor: NA, knownInfection: NA, acuteFracture: NA,
     majorDeformity: NA, priorLongFusion: NA, predominantlyAxialPain: NA,
   };
 }
@@ -88,7 +88,7 @@ export function createDemoCase(): CaseInput {
   c.smokingStatus = "never"; c.nicotineVaping = "absent"; c.smokelessTobacco = "absent"; c.diabetesType = "none"; c.bmi = measured(28, "kg/m2");
   c.boneHealth = "unknown"; c.fragilityFracture = "absent"; c.chronicOpioidUse = "absent"; c.sleepApnea = "absent"; c.anticoagulation = "absent"; c.priorDvtPe = "absent";
   c.cardiopulmonaryDisease = "absent"; c.advancedRenalOrLiverDisease = "absent"; c.priorSurgeryType = "none"; c.sameLevelRevision = "absent"; c.priorDuralTear = "absent"; c.priorInfection = "absent"; c.priorPseudarthrosis = "absent";
-  c.proposedProcedure = "not-assessed"; c.pediatric = "absent"; c.pregnant = "absent"; c.cervicalThoracicSymptoms = "absent"; c.neuromuscularDisease = "absent"; c.knownTumor = "absent"; c.knownInfection = "absent"; c.acuteFracture = "absent"; c.majorDeformity = "absent"; c.priorLongFusion = "absent"; c.predominantlyAxialPain = "absent";
+  c.proposedProcedure = "not-assessed"; c.pregnant = "absent"; c.cervicalThoracicSymptoms = "absent"; c.neuromuscularDisease = "absent"; c.knownTumor = "absent"; c.knownInfection = "absent"; c.acuteFracture = "absent"; c.majorDeformity = "absent"; c.priorLongFusion = "absent"; c.predominantlyAxialPain = "absent";
   return c;
 }
 

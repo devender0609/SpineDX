@@ -1,4 +1,4 @@
-export type ClinicalStatus = "present" | "absent" | "unknown" | "not-assessed";
+export type ClinicalStatus = "present" | "absent" | "unknown" | "not-assessed" | "not-applicable";
 export type Confidence = "high" | "moderate" | "low" | "not-assessed";
 export type Laterality = "right" | "left" | "bilateral" | "midline" | "not-assessed";
 export type Root = "L4" | "L5" | "S1";
@@ -147,7 +147,6 @@ export type CaseInput = {
   proposedLevels: LumbarLevel[];
   plannedSetting: "outpatient" | "inpatient" | "not-assessed";
 
-  pediatric: ClinicalStatus;
   pregnant: ClinicalStatus;
   cervicalThoracicSymptoms: ClinicalStatus;
   neuromuscularDisease: ClinicalStatus;
