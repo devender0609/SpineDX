@@ -1,0 +1,6 @@
+evidence_id,domain,status,required_metadata
+CES-PATH,emergency screening,pending formal adjudication,"full citation; organization; population; recommendation; limitations; review date"
+NASS-LDH,lumbar disc herniation,pending formal adjudication,"full citation; searched dates; recommendation; evidence grade; exceptions"
+NASS-LSS,lumbar stenosis,pending formal adjudication,"full citation; searched dates; recommendation; evidence grade; exceptions"
+NORDSTEN-5Y,decompression versus fusion,pending formal adjudication,"full citation; population; exclusions; outcome; limitations"
+SWEDISH-LSS,decompression versus fusion,pending formal adjudication,"full citation; population; exclusions; outcome; limitations"

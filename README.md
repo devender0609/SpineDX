@@ -1,23 +1,20 @@
-# SpineDx-Tx v25
+# SpineDx-Tx v26
 
-Transparent lumbar clinical–imaging reconciliation and research-adjudication prototype. v25 adds structured capture of independent clinician judgment, second review, adjudicated reference standards, actual treatment, and longitudinal outcomes. It remains a research prototype and is not a validated diagnostic, treatment-selection, risk-prediction, or outcome-prediction tool.
+A transparent, clinician-facing lumbar clinical–imaging reconciliation and research-validation platform.
 
-## Verify
+## Initial intended use
+Adults with suspected L4, L5, or S1 radiculopathy due to disc herniation, lateral-recess stenosis, or foraminal stenosis, and adults with suspected neurogenic claudication due to central lumbar stenosis.
 
-```bash
-npm install
-npm run test:engine
-npm run typecheck
-npm run build
-```
+## Important limitations
+- Research and clinician decision-support prototype; not autonomous diagnosis or treatment.
+- Emergency screening is deterministic and incomplete answers produce indeterminate urgency.
+- Imaging severity alone cannot establish a symptomatic target.
+- Fusion rationale is assessed at the proposed operative level.
+- Risk findings are optimization flags, not individualized probabilities.
+- The synthetic emulator is excluded from this validation build.
 
-## Research workflow
-
-1. Enter a de-identified clinical case.
-2. Record the independent clinician impression before app exposure.
-3. Generate the frozen app synthesis.
-4. Record second-reviewer and adjudicated labels.
-5. Record actual treatment and observed outcomes separately.
-6. Export CSV for analysis or complete JSON for audit and reproducibility.
-
-See `docs/current/V25_RESEARCH_DATASET.md`.
+## Commands
+`npm install`
+`npm run test:engine`
+`npm run typecheck`
+`npm run build`

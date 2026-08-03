@@ -1,0 +1,9 @@
+field,definition,allowed_values_or_unit,missing_state,source,timing,required_for
+studyId,Research case identifier,text,blank,research team,index,export
+age,Age at assessment,years,not-measured/unknown,chart,index,scope
+urinaryRetention,Current urinary retention warning,present/absent/unknown/not-assessed,not-assessed,clinician,index,safety
+rightAnkleDorsiflexion,Right ankle dorsiflexion strength,MRC grade/not-tested,not-tested,clinician,index,localization
+imagesReviewed,Direct imaging review completed,present/absent/unknown/not-assessed,not-assessed,clinician,index,localization
+rightRecess_L4_5,Right L4-5 lateral recess severity,none/mild/moderate/severe/not-graded,not-graded,radiology,index,localization
+dynamicInstability_L4_5,Dynamic instability at L4-5,present/absent/unknown/not-assessed,not-assessed,imaging,index,fusion
+hba1c,Most recent HbA1c,percent,not-measured/unknown,lab,preoperative,risk

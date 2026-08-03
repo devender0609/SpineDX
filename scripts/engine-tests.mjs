@@ -1,20 +1,60 @@
 import assert from "node:assert/strict";
-import { evaluateCase, validateCase } from "../lib/decisionEngine.ts";
-import { createBlankCaseFromTemplate } from "../lib/caseFactory.ts";
+import { createBlankCase, createDemoCase, measured } from "../lib/caseFactory.ts";
+import { evaluateCase } from "../lib/decisionEngine.ts";
 
-const levels=["L1-2","L2-3","L3-4","L4-5","L5-S1"];
-const blankMatrix=levels.map(level=>({level,central:"not-graded",rightRecess:"not-graded",leftRecess:"not-graded",rightForamen:"not-graded",leftForamen:"not-graded",discMorphology:"none",migration:"none",synovialCyst:false,rootDeformation:false,priorDecompression:false}));
-const template={age:66,symptomDurationWeeks:32,onset:"chronic",side:"right",painPattern:"radicular",suspectedRoot:"L5",backPain:4,legPain:8,walkingLimitMeters:150,standingProvokes:true,sittingRelieves:true,flexionRelieves:true,coughSneezeProvokes:false,nightRestPain:false,groinPain:false,patientGoal:"demo",mostImportantSymptom:"leg-pain",desiredActivity:"walk",treatmentPreference:"undecided",riskTolerance:"moderate",workDemand:"retired",homeSupport:"adequate",odi:42,promisPhysicalFunction:38,promisPainInterference:62,depressionTScore:50,zcqSeverity:3,rightHipFlexion:"5",leftHipFlexion:"5",rightKneeExtension:"5",leftKneeExtension:"5",rightAnkleDorsiflexion:"4",leftAnkleDorsiflexion:"5",rightGreatToeExtension:"4",leftGreatToeExtension:"5",rightPlantarFlexion:"5",leftPlantarFlexion:"5",weaknessQuality:"true",weaknessTrajectory:"stable",weaknessDurationDays:30,muscleAtrophy:false,examConfidence:"high",rightPatellarReflex:"normal",leftPatellarReflex:"normal",rightAchillesReflex:"normal",leftAchillesReflex:"normal",rightSensoryRoot:"L5",leftSensoryRoot:"none",sensoryRoot:"L5",straightLegRaise:"positive",femoralStretch:"negative",gaitAbnormal:false,heelWalkAbnormal:true,toeWalkAbnormal:false,repeatedHeelRaiseAbnormal:false,hipExamAbnormal:false,pulsesAbnormal:false,neuropathyFeatures:false,standingProvocationPattern:"both",reliefPattern:"sitting",bicycleToleranceBetter:true,uphillBetter:true,legHeaviness:false,imagingAgeMonths:2,actualImagesReviewed:true,imageQuality:"adequate",levelByLevelDocumented:true,imagingMatrix:blankMatrix,imagingLevel:"L4-5",imagingSide:"right",imagingFinding:"lateral-recess",stenosisSeverity:"severe",migratedDisc:false,spondylolisthesis:false,slipMillimeters:4,slipType:"degenerative",dynamicInstability:"unknown",translationMillimeters:null,angularMotionDegrees:null,deformityPresent:false,coronalCobbDegrees:null,lateralListhesisMillimeters:null,segmentalKyphosisDegrees:null,sagittalImbalancePresent:false,foraminalCollapse:"unknown",priorLumbarSurgery:false,priorLongFusion:false,plannedFacetResection:"unknown",completedExerciseProgram:true,exerciseWeeks:12,medicationTrial:true,injectionResponse:"not-tried",injectionLevel:"unknown",injectionSide:"unknown",injectionDurationDays:null,injectionType:"unknown",injectionImmediateReliefPercent:null,injectionDelayedReliefPercent:null,injectionFunctionImproved:false,progressiveWeaknessStatus:"absent",urinaryRetentionStatus:"absent",urinarySensationLossStatus:"absent",urinaryInitiationDifficultyStatus:"absent",overflowIncontinenceStatus:"absent",urgencyAlone:false,saddleAnesthesiaStatus:"absent",bilateralSevereDeficitStatus:"absent",feverStatus:"absent",cancerWarningStatus:"absent",traumaWarningStatus:"absent",reducedAnalTone:"not-assessed",postVoidResidualMl:null,fever:false,bacteremiaOrRecentInfection:false,immunosuppression:false,recentProcedure:false,cancerHistory:false,unexplainedWeightLoss:false,recentTrauma:false,osteoporosisRisk:false,chronicSteroidUse:false,inflammatoryFeatures:false,smoking:false,smokingStatus:"never",cigarettesPerDay:null,packYears:null,quitDate:"",vapingNicotine:false,smokelessTobacco:false,nicotineReplacement:false,diabetes:false,diabetesType:"none",a1c:null,a1cDate:"",insulinUse:false,bmi:28,frailty:"none",clinicalFrailtyScale:2,boneHealth:"unknown",priorFragilityFracture:false,dexLowestTScore:null,vitaminD:null,boneMedication:"unknown",chronicOpioidUse:false,opioidMmed:null,opioidDurationMonths:null,benzodiazepineUse:false,depressionAnxietyConcern:false,phq9:null,gad7:null,anticoagulation:false,anticoagulantName:"",priorDvtPe:false,anemia:false,hemoglobin:null,albumin:4,recentWeightLoss:false,hypertension:false,coronaryDisease:false,heartFailure:false,arrhythmia:false,copd:false,sleepApnea:false,cpapUse:false,kidneyDiseaseStage:"none",liverDisease:false,cardiopulmonaryDisease:false,priorSurgeryType:"none",priorSurgeryLevels:"",priorSurgeryDate:"",sameLevelRevision:false,priorDuralTear:false,priorInfection:false,priorPseudarthrosis:false,hardwareFailure:false,plannedProcedure:"not-selected",sexAtBirth:"unknown",plannedLevels:null,plannedApproach:"not-selected",plannedRevision:false,plannedSetting:"not-selected",pediatric:false,pregnant:false,cervicalThoracicSymptoms:false,neuromuscularDisease:false,tumorKnown:false,infectionKnown:false,acuteFractureKnown:false,clinicianAgreement:"not-reviewed",overrideReasonCategory:"none",overrideReason:"",finalClinicalDecision:""};
-const blank=createBlankCaseFromTemplate(template,blankMatrix);
-assert.equal(blank.age,null);assert.equal(blank.odi,null);assert.equal(blank.dexLowestTScore,null);assert.equal(blank.smokingStatus,"not-assessed");assert.equal(blank.priorSurgeryType,"not-assessed");assert.equal(blank.onset,"not-assessed");
-assert.equal(evaluateCase(blank).neurologicSeverity,"indeterminate");
-assert.match(evaluateCase(blank).urgencyReason,/incomplete/i);
-const retention=structuredClone(blank);retention.urinaryRetentionStatus="present";assert.equal(evaluateCase(retention).urgency,"emergency");
-const progressive=structuredClone(blank);progressive.progressiveWeaknessStatus="present";assert.equal(evaluateCase(progressive).urgency,"urgent");
-const missingAge=structuredClone(blank);assert.equal(validateCase(missingAge).length,0);assert.notEqual(evaluateCase(missingAge).applicability.status,"out-of-scope");
-const untested=structuredClone(blank);untested.imagingMatrix[3].rightRecess="severe";untested.side="right";untested.actualImagesReviewed=true;untested.levelByLevelDocumented=true;const ur=evaluateCase(untested);assert.equal(ur.candidateTargets.length,0,"Severe imaging alone must not create a ranked target");
-assert.equal(evaluateCase(blank).urgency,"indeterminate","Incomplete safety screen must produce indeterminate urgency");
-const l4=structuredClone(template);l4.imagingMatrix=blankMatrix.map(x=>({...x}));l4.imagingMatrix[3].rightForamen="moderate";l4.side="right";l4.rightKneeExtension="4";l4.rightPatellarReflex="reduced";l4.rightSensoryRoot="L4";const l4r=evaluateCase(l4);assert.ok(l4r.candidateTargets.some(t=>t.root==="L4"&&t.for.some(x=>x.includes("Patellar reflex"))));
-const diabetesUnknown=structuredClone(blank);diabetesUnknown.diabetesType="type-2";const dr=evaluateCase(diabetesUnknown);assert.ok(dr.optimization.some(x=>x.includes("HbA1c")));
-const fusionUnknown=structuredClone(template);fusionUnknown.imagingMatrix=blankMatrix.map(x=>({...x}));fusionUnknown.imagingMatrix[3].rightRecess="moderate";const fr=evaluateCase(fusionUnknown);assert.match(fr.fusionAssessment,/Unable to determine/i);
-console.log("v25 engine tests passed");
+const blank=createBlankCase();
+assert.equal(blank.standingProvokes,"not-assessed");
+assert.equal(blank.smokingStatus,"not-assessed");
+assert.equal(blank.age.value,null);
+assert.equal(blank.age.status,"not-measured");
+let r=evaluateCase(blank);
+assert.equal(r.urgency,"indeterminate");
+assert.equal(r.neurologic.severity,"indeterminate");
+assert.equal(r.targets.length,0);
+
+const emergency=createBlankCase();
+emergency.urinaryRetention="present";
+r=evaluateCase(emergency);
+assert.equal(r.urgency,"emergency");
+
+const urgent=createBlankCase();
+for(const k of ["urinaryRetention","urinarySensationLoss","urinaryInitiationDifficulty","overflowIncontinence","saddleSensoryChange","bilateralSevereDeficit","feverOrSystemicInfection","cancerWarning","traumaOrFractureWarning"]) urgent[k]="absent";
+urgent.progressiveWeakness="present";
+r=evaluateCase(urgent);
+assert.equal(r.urgency,"urgent");
+
+const incidental=createDemoCase();
+incidental.dermatomalPain="absent"; incidental.legDominantPain="absent"; incidental.straightLegRaise="negative";
+incidental.rightAnkleDorsiflexion="5"; incidental.rightGreatToeExtension="5"; incidental.rightSensoryRoot="none";
+r=evaluateCase(incidental);
+assert.equal(r.targets.length,0,"Severe imaging without clinical support must not create a target");
+
+const demo=createDemoCase();
+r=evaluateCase(demo);
+assert.equal(r.urgency,"routine");
+assert.equal(r.targets[0]?.root,"L5");
+assert.equal(r.targets[0]?.level,"L4-5");
+assert.ok(["radiculopathy-supported","mixed"].includes(r.syndrome.derived));
+
+const wrongLevelFusion=createDemoCase();
+wrongLevelFusion.proposedProcedure="decompression-fusion";
+wrongLevelFusion.proposedLevels=["L4-5"];
+const l23=wrongLevelFusion.fusionMatrix.find(x=>x.level==="L2-3");
+l23.dynamicInstability="present";
+r=evaluateCase(wrongLevelFusion);
+assert.notEqual(r.fusion.status,"established","Instability at another level must not establish fusion at L4-5");
+
+const sameLevelFusion=createDemoCase();
+sameLevelFusion.proposedProcedure="decompression-fusion";
+sameLevelFusion.proposedLevels=["L4-5"];
+const l45=sameLevelFusion.fusionMatrix.find(x=>x.level==="L4-5");
+l45.dynamicInstability="present"; l45.foraminalCollapse="present"; l45.plannedFacetResectionPercent=measured(60,"%"); l45.revisionDestabilization="absent"; l45.pseudarthrosis="absent"; l45.relevantDeformity="absent";
+r=evaluateCase(sameLevelFusion);
+assert.equal(r.fusion.status,"established");
+
+const missingLab=createDemoCase();
+missingLab.proposedProcedure="fusion"; missingLab.proposedLevels=["L4-5"]; missingLab.diabetesType="type-2"; missingLab.hba1c={value:null,status:"not-measured",unit:"%"};
+r=evaluateCase(missingLab);
+assert.ok(r.risk.patientSpecific.some(x=>x.includes("HbA1c is unavailable")));
+
+console.log("v26 engine tests passed");
