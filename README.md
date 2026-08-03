@@ -1,3 +1,7 @@
+# SpineDx-Tx v27.1
+
+This build is a lumbar/lumbosacral clinical–imaging reconciliation research prototype. Cervical, thoracic, multiregion, and nonspinal presentations are explicitly out of scope and do not enter lumbar localization or treatment logic.
+
 # SpineDx-Tx v27.0
 
 Clinician-centered lumbar clinical–imaging reconciliation prototype.

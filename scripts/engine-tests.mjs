@@ -44,7 +44,7 @@ wrongLevelFusion.proposedLevels=["L4-5"];
 const l23=wrongLevelFusion.fusionMatrix.find(x=>x.level==="L2-3");
 l23.dynamicInstability="present";
 r=evaluateCase(wrongLevelFusion);
-assert.notEqual(r.fusion.status,"established","Instability at another level must not establish fusion at L4-5");
+assert.notEqual(r.fusion.status,"factors-documented","Instability at another level must not establish fusion at L4-5");
 
 const sameLevelFusion=createDemoCase();
 sameLevelFusion.proposedProcedure="decompression-fusion";
@@ -52,7 +52,7 @@ sameLevelFusion.proposedLevels=["L4-5"];
 const l45=sameLevelFusion.fusionMatrix.find(x=>x.level==="L4-5");
 l45.dynamicInstability="present"; l45.foraminalCollapse="present"; l45.plannedFacetResectionPercent=measured(60,"%"); l45.revisionDestabilization="absent"; l45.pseudarthrosis="absent"; l45.relevantDeformity="absent";
 r=evaluateCase(sameLevelFusion);
-assert.equal(r.fusion.status,"established");
+assert.equal(r.fusion.status,"factors-documented");
 
 const missingLab=createDemoCase();
 missingLab.proposedProcedure="fusion"; missingLab.proposedLevels=["L4-5"]; missingLab.diabetesType="type-2"; missingLab.hba1c={value:null,status:"not-measured",unit:"%"};
@@ -77,4 +77,12 @@ const sideMismatch=createDemoCase();
 sideMismatch.side="left";
 assert.ok(validateCaseInput(sideMismatch).some(x=>x.id==="side-mismatch-left"&&x.severity==="warning"));
 
-console.log("v27 engine and validation tests passed");
+const incompleteSafety=createDemoCase();
+incompleteSafety.urinaryRetention="not-assessed";
+assert.ok(validateCaseInput(incompleteSafety).some(x=>x.id==="safety-incomplete"&&x.severity==="error"));
+
+const cervical=createDemoCase();
+cervical.primaryRegion="cervical";
+assert.ok(validateCaseInput(cervical).some(x=>x.id==="region-outside"&&x.severity==="error"));
+
+console.log("v27.1 engine and validation tests passed");

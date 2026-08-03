@@ -16,8 +16,8 @@ export type DecisionOutput = {
   mimics:string[];
   nextSteps:string[];
   nonoperative:string[];
-  specialistReview:{ status:"supported"|"not-established"|"unable-to-assess"|"urgent"; reasons:string[]; limitations:string[] };
-  fusion:{ status:"established"|"possible"|"not-established"|"unable-to-assess"|"not-applicable"; level?:LumbarLevel; reasons:string[]; missing:string[] };
+  specialistReview:{ status:"emergency"|"expedited"|"routine-reasonable"|"additional-assessment"|"no-invasive-target"; reasons:string[]; limitations:string[] };
+  fusion:{ status:"factors-documented"|"incompletely-assessed"|"no-independent-factor"|"not-applicable"; level?:LumbarLevel; reasons:string[]; missing:string[] };
   risk:{ patientSpecific:string[]; procedureSpecific:string[]; generalEducation:string[]; status:"available"|"limited"|"not-assessed" };
   ruleTrace:{ ruleId:string; input:string; conclusion:string; evidenceIds:string[]; strength:"high"|"moderate"|"limited"|"consensus" }[];
 };
@@ -51,28 +51,38 @@ function safety(i:CaseInput){
 }
 
 function syndrome(i:CaseInput){
-  const rad:string[]=[]; const claud:string[]=[]; const conflicts:string[]=[];
-  if(isPresent(i.legDominantPain)) rad.push("leg-dominant pain");
-  if(isPresent(i.dermatomalPain)) rad.push("dermatomal pain distribution");
-  if(i.straightLegRaise==="positive"||i.femoralStretch==="positive") rad.push("positive nerve-tension test");
-  const motorAbnormal=[i.rightKneeExtension,i.leftKneeExtension,i.rightAnkleDorsiflexion,i.leftAnkleDorsiflexion,i.rightGreatToeExtension,i.leftGreatToeExtension,i.rightPlantarFlexion,i.leftPlantarFlexion].some(g=>grade(g)!==null&&grade(g)!<5);
-  if(motorAbnormal) rad.push("focal motor abnormality");
-  if([i.rightSensoryRoot,i.leftSensoryRoot].some(x=>["L4","L5","S1"].includes(String(x)))) rad.push("dermatomal sensory finding");
-  if(isPresent(i.standingProvokes)||isPresent(i.walkingProvokes)) claud.push("standing/walking provocation");
-  if(isPresent(i.sittingRelieves)||isPresent(i.flexionRelieves)) claud.push("sitting/flexion relief");
-  if(isPresent(i.bicycleBetter)||isPresent(i.uphillBetterThanDownhill)) claud.push("flexion-favoring activity pattern");
-  if(isPresent(i.legHeaviness)) claud.push("leg heaviness");
+  const rationale:string[]=[]; const conflicts:string[]=[];
+  const symptomDomain=isPresent(i.legDominantPain)||isPresent(i.dermatomalPain);
+  const tensionDomain=i.straightLegRaise==="positive"||i.femoralStretch==="positive";
+  const motorDomain=[i.rightKneeExtension,i.leftKneeExtension,i.rightAnkleDorsiflexion,i.leftAnkleDorsiflexion,i.rightGreatToeExtension,i.leftGreatToeExtension,i.rightPlantarFlexion,i.leftPlantarFlexion].some(g=>grade(g)!==null&&grade(g)!<5);
+  const sensoryDomain=[i.rightSensoryRoot,i.leftSensoryRoot].some(x=>["L4","L5","S1"].includes(String(x)));
+  const reflexDomain=[i.rightPatellarReflex,i.leftPatellarReflex,i.rightAchillesReflex,i.leftAchillesReflex].some(r=>r==="reduced"||r==="absent");
+  if(symptomDomain) rationale.push("radicular symptom phenotype");
+  if(tensionDomain) rationale.push("positive nerve-tension test");
+  if(motorDomain) rationale.push("focal motor abnormality");
+  if(sensoryDomain) rationale.push("dermatomal sensory finding");
+  if(reflexDomain) rationale.push("compatible reflex abnormality");
+  const provocation=isPresent(i.standingProvokes)||isPresent(i.walkingProvokes);
+  const relief=isPresent(i.sittingRelieves)||isPresent(i.flexionRelieves);
+  const flexionPattern=isPresent(i.bicycleBetter)||isPresent(i.uphillBetterThanDownhill)||isPresent(i.legHeaviness);
+  if(provocation) rationale.push("standing or walking provocation");
+  if(relief) rationale.push("sitting or flexion relief");
+  if(flexionPattern) rationale.push("flexion-favoring activity pattern");
   if(isPresent(i.stoppingAloneRelieves)||isPresent(i.pulsesAbnormal)) conflicts.push("vascular features require review");
   if(isPresent(i.hipExamAbnormal)||isPresent(i.groinPain)) conflicts.push("hip findings may compete with lumbar attribution");
   if(isPresent(i.neuropathyFeatures)) conflicts.push("peripheral neuropathy may compete with root localization");
+  const radSupported=symptomDomain&&(motorDomain||sensoryDomain||reflexDomain||tensionDomain);
+  const radPartial=symptomDomain||motorDomain||sensoryDomain||reflexDomain||tensionDomain;
+  const claudSupported=provocation&&relief&&flexionPattern;
+  const claudPartial=[provocation,relief,flexionPattern].filter(Boolean).length>=2;
   let derived:DecisionOutput["syndrome"]["derived"]="indeterminate";
-  if(rad.length>=3&&claud.length>=2) derived="mixed";
-  else if(rad.length>=3) derived="radiculopathy-supported";
-  else if(rad.length>=1) derived="radiculopathy-partial";
-  else if(claud.length>=3) derived="claudication-supported";
-  else if(claud.length>=1) derived="claudication-partial";
+  if(radSupported&&claudSupported) derived="mixed";
+  else if(radSupported) derived="radiculopathy-supported";
+  else if(claudSupported) derived="claudication-supported";
+  else if(radPartial) derived="radiculopathy-partial";
+  else if(claudPartial) derived="claudication-partial";
   else if(i.clinicianPhenotype!=="not-assessed") derived="not-supported";
-  return { clinicianEntered:i.clinicianPhenotype, derived, rationale:[...rad,...claud], conflicts };
+  return { clinicianEntered:i.clinicianPhenotype, derived, rationale, conflicts };
 }
 
 function neurologic(i:CaseInput){
@@ -155,22 +165,21 @@ function applicability(i:CaseInput){
 }
 
 function fusion(i:CaseInput,top:CandidateTarget|undefined):DecisionOutput["fusion"]{
-  if(!top||top.root==="multiroot"&&!i.proposedLevels.length) return {status:"unable-to-assess",reasons:[],missing:["No level-specific operative target is available."]};
-  if(i.proposedProcedure==="none"||i.proposedProcedure==="not-assessed"||i.proposedProcedure==="decompression"||i.proposedProcedure==="discectomy") return {status:"not-applicable",reasons:["Fusion is not the currently proposed procedure."],missing:[]};
-  const level=(i.proposedLevels[0]||top.level) as LumbarLevel;
+  if(i.proposedProcedure!=="fusion"&&i.proposedProcedure!=="decompression-fusion") return {status:"not-applicable",reasons:[],missing:[]};
+  const level=i.proposedLevels[0]??top?.level;
+  if(!level) return {status:"incompletely-assessed",reasons:[],missing:["proposed fusion level"]};
   const f=i.fusionMatrix.find(x=>x.level===level);
-  if(!f) return {status:"unable-to-assess",level,reasons:[],missing:["Level-specific fusion assessment is missing."]};
+  if(!f) return {status:"incompletely-assessed",level,reasons:[],missing:["level-specific fusion assessment"]};
   const reasons:string[]=[]; const missing:string[]=[];
   if(isPresent(f.dynamicInstability)) reasons.push("documented dynamic instability"); else if(!isAssessed(f.dynamicInstability)) missing.push("dynamic instability");
-  if(isPresent(f.foraminalCollapse)) reasons.push("foraminal collapse at the proposed level"); else if(!isAssessed(f.foraminalCollapse)) missing.push("foraminal collapse");
-  if(f.plannedFacetResectionPercent.status==="measured"&&f.plannedFacetResectionPercent.value!==null&&f.plannedFacetResectionPercent.value>=50) reasons.push("anticipated substantial facet resection"); else if(f.plannedFacetResectionPercent.status!=="measured") missing.push("planned facet resection extent");
-  if(isPresent(f.revisionDestabilization)) reasons.push("revision-related destabilization"); else if(!isAssessed(f.revisionDestabilization)) missing.push("revision destabilization");
-  if(isPresent(f.pseudarthrosis)) reasons.push("pseudarthrosis"); else if(!isAssessed(f.pseudarthrosis)) missing.push("pseudarthrosis status");
-  if(isPresent(f.relevantDeformity)) reasons.push("relevant deformity at the proposed level"); else if(!isAssessed(f.relevantDeformity)) missing.push("level-specific deformity relevance");
-  if(reasons.length>=2) return {status:"established",level,reasons,missing};
-  if(reasons.length===1) return {status:"possible",level,reasons,missing};
-  if(missing.length) return {status:"unable-to-assess",level,reasons,missing};
-  return {status:"not-established",level,reasons:["No independent level-specific fusion factor was identified."],missing};
+  if(isPresent(f.foraminalCollapse)) reasons.push("foraminal height loss or exiting-root compression documented"); else if(!isAssessed(f.foraminalCollapse)) missing.push("foraminal height loss");
+  if(f.plannedFacetResectionPercent.status==="measured"&&f.plannedFacetResectionPercent.value!==null) reasons.push(`planned facet resection documented (${f.plannedFacetResectionPercent.value}%)`); else if(f.plannedFacetResectionPercent.status!=="not-applicable") missing.push("planned facet resection extent");
+  if(isPresent(f.revisionDestabilization)) reasons.push("revision-related destabilization documented"); else if(!isAssessed(f.revisionDestabilization)) missing.push("revision destabilization");
+  if(isPresent(f.pseudarthrosis)) reasons.push("pseudarthrosis documented"); else if(!isAssessed(f.pseudarthrosis)) missing.push("pseudarthrosis status");
+  if(isPresent(f.relevantDeformity)) reasons.push("level-specific deformity documented"); else if(!isAssessed(f.relevantDeformity)) missing.push("level-specific deformity relevance");
+  if(reasons.length) return {status:"factors-documented",level,reasons,missing};
+  if(missing.length) return {status:"incompletely-assessed",level,reasons,missing};
+  return {status:"no-independent-factor",level,reasons:["No independent level-specific fusion-rationale factor was documented."],missing};
 }
 
 function risk(i:CaseInput):DecisionOutput["risk"]{
@@ -203,18 +212,20 @@ export function evaluateCase(i:CaseInput):DecisionOutput{
   if(neuro.reliability==="low"||neuro.reliability==="indeterminate") limitations.push("Neurologic examination reliability is limited.");
   if(!top) limitations.push("No clinically eligible imaging target was established.");
   let specialist:DecisionOutput["specialistReview"];
-  if(sf.urgency==="emergency"||sf.urgency==="urgent") specialist={status:"urgent",reasons:[sf.reason],limitations};
-  else if(app.treatment==="out-of-scope") specialist={status:"unable-to-assess",reasons:["The case is outside the initial treatment-reconciliation scope."],limitations};
-  else if(top&&(durable||objectiveStrong)&&top.conflicts.length<=1) specialist={status:"supported",reasons:[durable?"Symptoms have persisted for at least six weeks.":"A reliable objective neurologic deficit is present.",`Candidate ${top.rank}: ${top.side} ${top.root} at ${top.level} ${top.zone}.`],limitations};
-  else if(!top||sf.urgency==="indeterminate") specialist={status:"unable-to-assess",reasons:[],limitations:[...limitations,"Required information is incomplete."]};
-  else specialist={status:"not-established",reasons:["Current evidence does not establish specialist review support under the prespecified rule set."],limitations};
+  if(sf.urgency==="emergency") specialist={status:"emergency",reasons:[sf.reason],limitations};
+  else if(sf.urgency==="urgent") specialist={status:"expedited",reasons:[sf.reason],limitations};
+  else if(app.treatment==="out-of-scope") specialist={status:"additional-assessment",reasons:["The case is outside the current lumbar treatment-reconciliation module."],limitations};
+  else if(top&&(durable||objectiveStrong||i.treatmentPreference==="open-to-surgery")&&top.conflicts.length<=1) specialist={status:"routine-reasonable",reasons:[durable?"Symptoms have persisted for at least six weeks.":objectiveStrong?"An objective neurologic deficit is present.":"The patient is open to specialist discussion.",`Most concordant candidate: ${top.side} ${top.root} at ${top.level} ${top.zone}.`],limitations};
+  else if(sf.urgency==="indeterminate") specialist={status:"additional-assessment",reasons:[],limitations:[...limitations,"Required safety information is incomplete."]};
+  else if(!top) specialist={status:"no-invasive-target",reasons:["Current information does not establish a concordant invasive-treatment target."],limitations};
+  else specialist={status:"additional-assessment",reasons:["Additional assessment may be useful before deciding whether an invasive-treatment review is appropriate."],limitations};
   const fus=fusion(i,top); const rk=risk(i);
   const highlights:HighlightFinding[]=[
     {title:`Urgency: ${sf.urgency}`,detail:sf.reason,tone:sf.urgency==="emergency"?"critical":sf.urgency==="urgent"?"warning":sf.urgency==="routine"?"positive":"neutral",priority:1,ruleId:"SAFE-001"},
     {title:`Syndrome: ${sy.derived.replaceAll("-"," ")}`,detail:sy.rationale.length?sy.rationale.join("; "):"Insufficient clinical features to derive a syndrome.",tone:sy.derived.includes("supported")?"positive":sy.derived==="indeterminate"?"neutral":"info",priority:1,ruleId:"SYN-001"},
     {title:top?`Best-supported target: ${top.side} ${top.root}, ${top.level} ${top.zone}`:"No symptomatic target established",detail:top?`${top.support.length} supporting domain(s), ${top.conflicts.length} conflict(s), ${top.unavailable.length} unavailable domain(s).`:"Severe imaging alone is not treated as symptomatic without clinical eligibility.",tone:top?"info":"neutral",priority:1,ruleId:"LOC-001"},
-    {title:`Specialist review: ${specialist.status.replaceAll("-"," ")}`,detail:[...specialist.reasons,...specialist.limitations].join(" ")||"No additional statement.",tone:specialist.status==="urgent"?"warning":specialist.status==="supported"?"positive":"neutral",priority:2,ruleId:"TRT-001"},
-    {title:`Fusion rationale: ${fus.status.replaceAll("-"," ")}`,detail:[...fus.reasons,...fus.missing.map(x=>`Missing: ${x}`)].join("; ")||"Not applicable.",tone:fus.status==="established"?"warning":fus.status==="possible"?"info":"neutral",priority:2,ruleId:"FUS-001"},
+    {title:`Specialist review: ${specialist.status.replaceAll("-"," ")}`,detail:[...specialist.reasons,...specialist.limitations].join(" ")||"No additional statement.",tone:specialist.status==="emergency"?"critical":specialist.status==="expedited"?"warning":specialist.status==="routine-reasonable"?"positive":"neutral",priority:2,ruleId:"TRT-001"},
+    {title:`Fusion rationale: ${fus.status.replaceAll("-"," ")}`,detail:[...fus.reasons,...fus.missing.map(x=>`Missing: ${x}`)].join("; ")||"Not applicable.",tone:fus.status==="factors-documented"?"info":"neutral",priority:2,ruleId:"FUS-001"},
   ];
   const nextSteps:string[]=[];
   if(sf.urgency==="emergency") nextSteps.push("Follow the local emergency pathway immediately.");
