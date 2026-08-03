@@ -1,6 +1,19 @@
-evidence_id,domain,status,required_metadata
-CES-PATH,emergency screening,pending formal adjudication,"full citation; organization; population; recommendation; limitations; review date"
-NASS-LDH,lumbar disc herniation,pending formal adjudication,"full citation; searched dates; recommendation; evidence grade; exceptions"
-NASS-LSS,lumbar stenosis,pending formal adjudication,"full citation; searched dates; recommendation; evidence grade; exceptions"
-NORDSTEN-5Y,decompression versus fusion,pending formal adjudication,"full citation; population; exclusions; outcome; limitations"
-SWEDISH-LSS,decompression versus fusion,pending formal adjudication,"full citation; population; exclusions; outcome; limitations"
+evidence_id,domain,source_type,status,key_applicability,principal_limitation,url,review_date
+CES-PATH,emergency screening,consensus pathway,pending formal adjudication,lumbar emergency warning screen,does not independently exclude emergency pathology,,2026-08-03
+NASS-LDH,lumbar disc herniation,guideline,curated,adults with lumbar disc herniation and radiculopathy,guideline recommendations require case-specific judgment,https://pubmed.ncbi.nlm.nih.gov/24239490/,2026-08-03
+NICE-NG59,low back pain and sciatica,guideline,curated,adults with low back pain or sciatica,health-system context and broad population,https://www.nice.org.uk/guidance/ng59,2026-08-03
+ACR-LBP,lumbar imaging,guideline,curated,imaging appropriateness for defined clinical variants,not a localization or treatment-selection rule,https://www.acr.org/clinical-resources/clinical-tools-and-reference/appropriateness-criteria,2026-08-03
+BRINJIKJI-ASYM,imaging interpretation,systematic review,curated,age-specific prevalence of degenerative imaging in asymptomatic adults,does not estimate symptom causality in an individual,https://pubmed.ncbi.nlm.nih.gov/25430861/,2026-08-03
+SLR-SR,clinical examination,systematic review,curated,straight-leg raise diagnostic utility,heterogeneous tests and reference standards,https://pubmed.ncbi.nlm.nih.gov/23220802/,2026-08-03
+SPORT-LDH-8Y,lumbar disc herniation,prospective randomized and observational cohorts,curated,surgical candidates with imaging-confirmed disc herniation,substantial crossover complicates intent-to-treat inference,https://pubmed.ncbi.nlm.nih.gov/24153171/,2026-08-03
+SPORT-LSS-8Y,lumbar spinal stenosis,prospective randomized and observational cohorts,curated,symptomatic surgical candidates with confirmatory imaging,crossover and attrition limit long-term randomized inference,https://pubmed.ncbi.nlm.nih.gov/25569524/,2026-08-03
+NORDSTEN-5Y,decompression versus fusion,randomized trial,curated,selected degenerative spondylolisthesis with stenosis,important exclusions limit generalization,https://www.bmj.com/content/386/bmj-2024-079771,2026-08-03
+SWEDISH-LSS,decompression versus fusion,randomized trial,curated,one- or two-level central lumbar stenosis,population-specific and not a universal fusion rule,https://pubmed.ncbi.nlm.nih.gov/38945544/,2026-08-03
+LEE-FORAMEN,foraminal stenosis,imaging reliability study,curated,L3-S1 MRI foraminal grading,reliability does not establish symptomatic causality,https://pubmed.ncbi.nlm.nih.gov/20308517/,2026-08-03
+FORAMEN-SR-2025,foraminal stenosis,systematic review,curated,comparison of radiologic grading systems,mostly low-level evidence and mixed symptom correlation,https://pubmed.ncbi.nlm.nih.gov/41695907/,2026-08-03
+PSEUDARTHROSIS-SR,lumbar fusion risk,systematic review and meta-analysis,curated,adult lumbar fusion pseudarthrosis risk factors,observational evidence and heterogeneity,https://pubmed.ncbi.nlm.nih.gov/38831392/,2026-08-03
+FRAILTY-MA,perioperative risk,systematic review and meta-analysis,curated,degenerative spine surgery,heterogeneous frailty definitions and procedures,https://pubmed.ncbi.nlm.nih.gov/37996826/,2026-08-03
+ODI-REVIEW,patient-reported outcome,psychometric review,curated,low-back-related disability,meaningful-change thresholds vary by population,https://pubmed.ncbi.nlm.nih.gov/19646379/,2026-08-03
+PROMIS-LUMBAR,patient-reported outcome,validation study,curated,lumbar and back-pain populations,T-scores do not localize pathology,https://pubmed.ncbi.nlm.nih.gov/26970039/,2026-08-03
+TRIPOD-AI,model reporting,reporting guideline,curated,prediction model development and validation,not a clinical effectiveness standard,https://pubmed.ncbi.nlm.nih.gov/38626948/,2026-08-03
+DECIDE-AI,early clinical evaluation,reporting guideline,curated,early-stage live clinical AI evaluation,does not replace later comparative effectiveness evaluation,https://pubmed.ncbi.nlm.nih.gov/35584845/,2026-08-03
