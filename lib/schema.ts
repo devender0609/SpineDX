@@ -76,6 +76,7 @@ export type CaseInput = {
   leftGreatToeExtension: MotorGrade;
   rightPlantarFlexion: MotorGrade;
   leftPlantarFlexion: MotorGrade;
+  rapidMotorScreen: ClinicalStatus;
   weaknessQuality: "true" | "pain-limited" | "give-way" | "uncertain" | "not-assessed";
   weaknessTrajectory: "stable" | "progressive" | "improving" | "none" | "not-assessed";
   weaknessProgressionBasis: "patient-reported" | "clinician-concern" | "serial-objective" | "not-assessed";
@@ -112,6 +113,7 @@ export type CaseInput = {
   imageQuality: "adequate" | "limited" | "unknown" | "not-assessed";
   imagingAgeMonths: Measurement;
   levelByLevelDocumented: ClinicalStatus;
+  rapidImagingScreen: ClinicalStatus;
   imagingMatrix: LevelFinding[];
   fusionMatrix: FusionLevelFinding[];
 

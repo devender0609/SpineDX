@@ -120,4 +120,25 @@ assert.ok(!r.ruleTrace.some(x=>x.ruleId==="FUS-001"));
 assert.ok(!r.highlights.some(x=>x.ruleId==="FUS-001"));
 assert.equal(r.concordance.length,5);
 
-console.log("v27.5 logic, synthesis, and validation tests passed");
+
+const rapidNoMotor=createBlankCase();
+rapidNoMotor.rapidMotorScreen="absent";
+r=evaluateCase(rapidNoMotor);
+assert.equal(r.neurologic.severity,"none");
+assert.ok(r.neurologic.rationale.some(x=>x.includes("focused motor screen")));
+
+const rapidNoImaging=createDemoCase();
+rapidNoImaging.rapidImagingScreen="absent";
+rapidNoImaging.levelByLevelDocumented="absent";
+rapidNoImaging.imagingMatrix=createBlankCase().imagingMatrix;
+r=evaluateCase(rapidNoImaging);
+assert.ok(r.concordance.some(x=>x.domain==="Imaging"&&x.finding.includes("No potentially relevant compressive finding")));
+assert.ok(r.ruleTrace.find(x=>x.ruleId==="LOC-001")?.evidenceIds.length===0);
+
+const noBenefit=createDemoCase();
+noBenefit.injectionResponse="none";
+r=evaluateCase(noBenefit);
+assert.ok(r.nonoperative.some(x=>x.includes("produced no benefit")));
+assert.ok(!r.nonoperative.some(x=>x.startsWith("A targeted injection may be discussed")));
+
+console.log("v28.2 smart rapid-review logic and validation tests passed");

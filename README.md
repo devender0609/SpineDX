@@ -1,4 +1,4 @@
-# SpineDx-Tx v28.1
+# SpineDx-Tx v28.2
 
 Physician workflow release with genuinely distinct Rapid and Comprehensive review modes.
 
@@ -17,4 +17,7 @@ Physician workflow release with genuinely distinct Rapid and Comprehensive revie
 - Detailed treatment, fusion-rationale, optimization, and research fields
 - Full clinical synthesis
 
-Run `install-v28.1.ps1` from this extracted source folder.
+Run `install-v28.2.ps1` from this extracted source folder.
+
+
+See `docs/V28_2_SMART_RAPID_REVIEW.md`.

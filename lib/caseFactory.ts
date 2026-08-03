@@ -45,7 +45,7 @@ export function createBlankCase(): CaseInput {
     legDominantPain: NA, dermatomalPain: NA, standingProvokes: NA, walkingProvokes: NA, sittingRelieves: NA, flexionRelieves: NA,
     stoppingAloneRelieves: NA, bicycleBetter: NA, uphillBetterThanDownhill: NA, legHeaviness: NA, coughSneezeProvokes: NA, groinPain: NA,
     rightKneeExtension: "not-tested", leftKneeExtension: "not-tested", rightAnkleDorsiflexion: "not-tested", leftAnkleDorsiflexion: "not-tested",
-    rightGreatToeExtension: "not-tested", leftGreatToeExtension: "not-tested", rightPlantarFlexion: "not-tested", leftPlantarFlexion: "not-tested",
+    rightGreatToeExtension: "not-tested", leftGreatToeExtension: "not-tested", rightPlantarFlexion: "not-tested", leftPlantarFlexion: "not-tested", rapidMotorScreen: NA,
     weaknessQuality: "not-assessed", weaknessTrajectory: "not-assessed", weaknessProgressionBasis: "not-assessed", examConfidence: "not-assessed",
     muscleAtrophy: NA, heelWalkAbnormal: NA, toeWalkAbnormal: NA, repeatedHeelRaiseAbnormal: NA,
     rightPatellarReflex: "not-tested", leftPatellarReflex: "not-tested", rightAchillesReflex: "not-tested", leftAchillesReflex: "not-tested",
@@ -53,7 +53,7 @@ export function createBlankCase(): CaseInput {
     hipExamAbnormal: NA, pulsesAbnormal: NA, neuropathyFeatures: NA,
     urinaryRetention: NA, urinarySensationLoss: NA, urinaryInitiationDifficulty: NA, overflowIncontinence: NA, urinaryUrgencyAlone: NA,
     saddleSensoryChange: NA, bilateralSevereDeficit: NA, progressiveWeakness: NA, feverOrSystemicInfection: NA, cancerWarning: NA, traumaOrFractureWarning: NA,
-    imagesReviewed: NA, imageQuality: "not-assessed", imagingAgeMonths: missingMeasurement("months"), levelByLevelDocumented: NA,
+    imagesReviewed: NA, imageQuality: "not-assessed", imagingAgeMonths: missingMeasurement("months"), levelByLevelDocumented: NA, rapidImagingScreen: NA,
     imagingMatrix: createBlankImagingMatrix(), fusionMatrix: createBlankFusionMatrix(),
     exerciseProgramCompleted: NA, exerciseWeeks: missingMeasurement("weeks"), medicationTrialCompleted: NA, injectionResponse: "unknown", injectionLevel: "unknown", injectionSide: "not-assessed",
     smokingStatus: "not-assessed", nicotineVaping: NA, smokelessTobacco: NA, diabetesType: "not-assessed", hba1c: missingMeasurement("%"), bmi: missingMeasurement("kg/m2"),
@@ -76,14 +76,14 @@ export function createDemoCase(): CaseInput {
   c.legDominantPain = "present"; c.dermatomalPain = "present"; c.standingProvokes = "present"; c.walkingProvokes = "present"; c.sittingRelieves = "present"; c.flexionRelieves = "present";
   c.stoppingAloneRelieves = "absent"; c.bicycleBetter = "present"; c.uphillBetterThanDownhill = "present"; c.legHeaviness = "absent"; c.coughSneezeProvokes = "absent"; c.groinPain = "absent";
   c.rightKneeExtension = "5"; c.leftKneeExtension = "5"; c.rightAnkleDorsiflexion = "4"; c.leftAnkleDorsiflexion = "5";
-  c.rightGreatToeExtension = "4"; c.leftGreatToeExtension = "5"; c.rightPlantarFlexion = "5"; c.leftPlantarFlexion = "5";
+  c.rightGreatToeExtension = "4"; c.leftGreatToeExtension = "5"; c.rightPlantarFlexion = "5"; c.leftPlantarFlexion = "5"; c.rapidMotorScreen = "present";
   c.weaknessQuality = "true"; c.weaknessTrajectory = "stable"; c.weaknessProgressionBasis = "not-assessed"; c.examConfidence = "high";
   c.muscleAtrophy = "absent"; c.heelWalkAbnormal = "present"; c.toeWalkAbnormal = "absent"; c.repeatedHeelRaiseAbnormal = "absent";
   c.rightPatellarReflex = "normal"; c.leftPatellarReflex = "normal"; c.rightAchillesReflex = "normal"; c.leftAchillesReflex = "normal";
   c.rightSensoryRoot = "L5"; c.leftSensoryRoot = "none"; c.straightLegRaise = "positive"; c.femoralStretch = "negative";
   c.hipExamAbnormal = "absent"; c.pulsesAbnormal = "absent"; c.neuropathyFeatures = "absent";
   for (const key of ["urinaryRetention","urinarySensationLoss","urinaryInitiationDifficulty","overflowIncontinence","urinaryUrgencyAlone","saddleSensoryChange","bilateralSevereDeficit","progressiveWeakness","feverOrSystemicInfection","cancerWarning","traumaOrFractureWarning"] as const) c[key] = "absent";
-  c.imagesReviewed = "present"; c.imageQuality = "adequate"; c.imagingAgeMonths = measured(2, "months"); c.levelByLevelDocumented = "present";
+  c.imagesReviewed = "present"; c.imageQuality = "adequate"; c.imagingAgeMonths = measured(2, "months"); c.levelByLevelDocumented = "present"; c.rapidImagingScreen = "present";
   const l45 = c.imagingMatrix.find(x => x.level === "L4-5")!; l45.rightRecess = "severe"; l45.discMorphology = "protrusion"; l45.migration = "none"; l45.rootDeformation = "present"; l45.synovialCyst = "absent"; l45.priorDecompression = "absent";
   for (const level of c.imagingMatrix.filter(x => x.level !== "L4-5")) { level.central = "none"; level.rightRecess = "none"; level.leftRecess = "none"; level.rightForamen = "none"; level.leftForamen = "none"; level.discMorphology = "none"; level.migration = "none"; level.rootDeformation = "absent"; level.synovialCyst = "absent"; level.priorDecompression = "absent"; }
   c.exerciseProgramCompleted = "present"; c.exerciseWeeks = measured(12, "weeks"); c.medicationTrialCompleted = "present"; c.injectionResponse = "meaningful-temporary"; c.injectionLevel = "L4-5"; c.injectionSide = "right";
