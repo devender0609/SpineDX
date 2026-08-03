@@ -1,0 +1,17 @@
+field,domain,definition,role
+studyId,research,De-identified study case identifier,linkage
+siteCode,research,Participating site code,transportability
+independentClinicianSyndrome,reference standard,Clinician impression recorded before app output,independent label
+independentClinicianRoot,reference standard,Suspected symptomatic root recorded before app output,independent label
+independentClinicianLevel,reference standard,Suspected symptomatic level recorded before app output,independent label
+independentClinicianZone,reference standard,Suspected compression zone recorded before app output,independent label
+adjudicatedSyndrome,reference standard,Consensus syndrome after blinded review,primary reference label
+adjudicatedRoot,reference standard,Consensus root after blinded review,primary reference label
+adjudicatedLevel,reference standard,Consensus level after blinded review,primary reference label
+adjudicatedZone,reference standard,Consensus compression zone after blinded review,primary reference label
+actualTreatment,outcome,Observed treatment delivered,descriptive outcome
+procedurePerformed,outcome,Observed procedure performed,descriptive outcome
+thirtyDayComplication,outcome,Observed complication within 30 days,outcome
+ninetyDayReadmission,outcome,Observed readmission within 90 days,outcome
+sixMonthOdi,outcome,ODI at approximately 6 months,outcome
+twelveMonthOdi,outcome,ODI at approximately 12 months,outcome

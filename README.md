@@ -1,6 +1,6 @@
-# SpineDx-Tx v23
+# SpineDx-Tx v25
 
-Transparent lumbar clinical–imaging reconciliation research prototype. v23 focuses on explicit missingness, schema integrity, deterministic safety logic, and executable engine tests. It is not a validated diagnostic, treatment-selection, risk-prediction, or outcome-prediction tool.
+Transparent lumbar clinical–imaging reconciliation and research-adjudication prototype. v25 adds structured capture of independent clinician judgment, second review, adjudicated reference standards, actual treatment, and longitudinal outcomes. It remains a research prototype and is not a validated diagnostic, treatment-selection, risk-prediction, or outcome-prediction tool.
 
 ## Verify
 
@@ -11,16 +11,13 @@ npm run typecheck
 npm run build
 ```
 
-See `docs/V23_SCHEMA_RULE_INTEGRITY.md`.
+## Research workflow
 
+1. Enter a de-identified clinical case.
+2. Record the independent clinician impression before app exposure.
+3. Generate the frozen app synthesis.
+4. Record second-reviewer and adjudicated labels.
+5. Record actual treatment and observed outcomes separately.
+6. Export CSV for analysis or complete JSON for audit and reproducibility.
 
-## v24 rule-integrity release
-
-- Incomplete emergency screening now produces **indeterminate urgency**, not routine urgency.
-- Syndrome labels are supported by entered clinical features rather than simply repeating the selected phenotype.
-- Severe imaging alone cannot create a ranked clinical target.
-- Patellar and Achilles reflexes contribute to L4 and S1 localization respectively.
-- Visible target output is ordinal rank only; research scores remain in technical details.
-- Smoking and diabetes risk logic uses the structured categorical fields as the authoritative source.
-- Fusion output includes an explicit unable-to-assess state when key variables are unknown.
-- General procedural risks are labeled as non-individualized educational considerations.
+See `docs/current/V25_RESEARCH_DATASET.md`.

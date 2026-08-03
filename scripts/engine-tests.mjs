@@ -17,4 +17,4 @@ assert.equal(evaluateCase(blank).urgency,"indeterminate","Incomplete safety scre
 const l4=structuredClone(template);l4.imagingMatrix=blankMatrix.map(x=>({...x}));l4.imagingMatrix[3].rightForamen="moderate";l4.side="right";l4.rightKneeExtension="4";l4.rightPatellarReflex="reduced";l4.rightSensoryRoot="L4";const l4r=evaluateCase(l4);assert.ok(l4r.candidateTargets.some(t=>t.root==="L4"&&t.for.some(x=>x.includes("Patellar reflex"))));
 const diabetesUnknown=structuredClone(blank);diabetesUnknown.diabetesType="type-2";const dr=evaluateCase(diabetesUnknown);assert.ok(dr.optimization.some(x=>x.includes("HbA1c")));
 const fusionUnknown=structuredClone(template);fusionUnknown.imagingMatrix=blankMatrix.map(x=>({...x}));fusionUnknown.imagingMatrix[3].rightRecess="moderate";const fr=evaluateCase(fusionUnknown);assert.match(fr.fusionAssessment,/Unable to determine/i);
-console.log("v24 engine tests passed");
+console.log("v25 engine tests passed");
