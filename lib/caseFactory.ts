@@ -40,6 +40,7 @@ export function createBlankCase(): CaseInput {
     studyId: "", primaryRegion: "lumbar",
     age: missingMeasurement("years"), sexAtBirth: "unknown", symptomDurationWeeks: missingMeasurement("weeks"), side: "not-assessed",
     clinicianPhenotype: "not-assessed", clinicianSuspectedRoot: "not-assessed", backPainNrs: missingMeasurement("0-10"), legPainNrs: missingMeasurement("0-10"),
+    baselineOdi: missingMeasurement("0-100"), baselinePromisPf: missingMeasurement("T-score"), baselinePromisPi: missingMeasurement("T-score"),
     walkingLimitMeters: missingMeasurement("m"), patientGoal: "", treatmentPreference: "not-assessed",
     legDominantPain: NA, dermatomalPain: NA, standingProvokes: NA, walkingProvokes: NA, sittingRelieves: NA, flexionRelieves: NA,
     stoppingAloneRelieves: NA, bicycleBetter: NA, uphillBetterThanDownhill: NA, legHeaviness: NA, coughSneezeProvokes: NA, groinPain: NA,
@@ -70,6 +71,7 @@ export function createDemoCase(): CaseInput {
   c.studyId = "DEMO-001"; c.primaryRegion = "lumbar";
   c.age = measured(66, "years"); c.sexAtBirth = "female"; c.symptomDurationWeeks = measured(32, "weeks"); c.side = "right";
   c.clinicianPhenotype = "radicular"; c.clinicianSuspectedRoot = "L5"; c.backPainNrs = measured(4, "0-10"); c.legPainNrs = measured(8, "0-10");
+  c.baselineOdi = measured(42, "0-100"); c.baselinePromisPf = measured(38, "T-score"); c.baselinePromisPi = measured(64, "T-score");
   c.walkingLimitMeters = measured(150, "m"); c.patientGoal = "Walk for 30 minutes with manageable leg pain"; c.treatmentPreference = "undecided";
   c.legDominantPain = "present"; c.dermatomalPain = "present"; c.standingProvokes = "present"; c.walkingProvokes = "present"; c.sittingRelieves = "present"; c.flexionRelieves = "present";
   c.stoppingAloneRelieves = "absent"; c.bicycleBetter = "present"; c.uphillBetterThanDownhill = "present"; c.legHeaviness = "absent"; c.coughSneezeProvokes = "absent"; c.groinPain = "absent";

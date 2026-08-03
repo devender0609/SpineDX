@@ -48,6 +48,9 @@ export type CaseInput = {
   clinicianSuspectedRoot: RootOrNone;
   backPainNrs: Measurement;
   legPainNrs: Measurement;
+  baselineOdi: Measurement;
+  baselinePromisPf: Measurement;
+  baselinePromisPi: Measurement;
   walkingLimitMeters: Measurement;
   patientGoal: string;
   treatmentPreference: "nonoperative" | "open-to-surgery" | "undecided" | "not-assessed";

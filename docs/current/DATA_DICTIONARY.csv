@@ -7,3 +7,6 @@ imagesReviewed,Direct imaging review completed,present/absent/unknown/not-assess
 rightRecess_L4_5,Right L4-5 lateral recess severity,none/mild/moderate/severe/not-graded,not-graded,radiology,index,localization
 dynamicInstability_L4_5,Dynamic instability at L4-5,present/absent/unknown/not-assessed,not-assessed,imaging,index,fusion
 hba1c,Most recent HbA1c,percent,not-measured/unknown,lab,preoperative,risk
+baselineOdi,Baseline Oswestry Disability Index,0-100,not-measured/unknown,patient-reported,index,longitudinal outcome context
+baselinePromisPf,Baseline PROMIS Physical Function,T-score,not-measured/unknown,patient-reported,index,longitudinal outcome context
+baselinePromisPi,Baseline PROMIS Pain Interference,T-score,not-measured/unknown,patient-reported,index,longitudinal outcome context
