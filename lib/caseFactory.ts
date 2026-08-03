@@ -37,7 +37,7 @@ export function createBlankFusionMatrix(): FusionLevelFinding[] {
 
 export function createBlankCase(): CaseInput {
   return {
-    studyId: "", primaryRegion: "not-assessed",
+    studyId: "", primaryRegion: "lumbar",
     age: missingMeasurement("years"), sexAtBirth: "unknown", symptomDurationWeeks: missingMeasurement("weeks"), side: "not-assessed",
     clinicianPhenotype: "not-assessed", clinicianSuspectedRoot: "not-assessed", backPainNrs: missingMeasurement("0-10"), legPainNrs: missingMeasurement("0-10"),
     walkingLimitMeters: missingMeasurement("m"), patientGoal: "", treatmentPreference: "not-assessed",

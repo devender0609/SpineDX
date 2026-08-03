@@ -4,7 +4,7 @@ import { evaluateCase } from "../lib/decisionEngine.ts";
 import { validateCaseInput } from "../lib/validation.ts";
 
 const blank=createBlankCase();
-assert.equal(blank.primaryRegion,"not-assessed");
+assert.equal(blank.primaryRegion,"lumbar");
 assert.equal(blank.standingProvokes,"not-assessed");
 assert.equal(blank.smokingStatus,"not-assessed");
 assert.equal(blank.age.value,null);

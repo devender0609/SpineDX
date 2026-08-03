@@ -1,18 +1,5 @@
-# SpineDx-Tx v27.1
+# SpineDx-Tx v27.2 — Lumbar-only clinical module
 
-This build is a lumbar/lumbosacral clinical–imaging reconciliation research prototype. Cervical, thoracic, multiregion, and nonspinal presentations are explicitly out of scope and do not enter lumbar localization or treatment logic.
+This build removes cervical, thoracic, multiregion, and nonspinal selections from the clinician workflow. The active module is fixed to lumbar/lumbosacral so the interface cannot imply unsupported region-specific logic.
 
-# SpineDx-Tx v27.0
-
-Clinician-centered lumbar clinical–imaging reconciliation prototype.
-
-This release adds a simplified pathway-driven interface, conditional clinical fields, one-screen synthesis, direct primary-region selection, structured range/context/cross-field validation, and a separate research workspace.
-
-Run:
-
-```bash
-npm install
-npm run test:engine
-npm run typecheck
-npm run build
-```
+The underlying schema retains region provenance only for backward-compatible research imports; new clinical cases initialize as lumbar/lumbosacral.
