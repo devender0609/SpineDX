@@ -220,8 +220,12 @@ function targets(i:CaseInput,sy:ReturnType<typeof syndrome>):TargetResult{
 
 function applicability(i:CaseInput){
   const reasons:string[]=[];
-  if(i.primaryRegion==="not-assessed") reasons.push("primary region not assessed");
-  else if(i.primaryRegion!=="lumbar") reasons.push(`primary region is ${i.primaryRegion.replaceAll("-"," ")}`);
+  // Clinical scope is governed by an explicit lumbar confirmation, not by a region menu.
+  // "no" and "uncertain" both withhold lumbar localization and treatment output; safety
+  // documentation continues either way.
+  if(i.lumbarScopeConfirmed==="not-assessed") reasons.push("lumbar scope is not confirmed");
+  else if(i.lumbarScopeConfirmed==="no") reasons.push("the assessment is not primarily lumbar/lumbosacral");
+  else if(i.lumbarScopeConfirmed==="uncertain") reasons.push("the primary region is uncertain");
   const outOfScope=[
     ["pregnancy",i.pregnant],["cervical/thoracic symptoms",i.cervicalThoracicSymptoms],["neuromuscular disease",i.neuromuscularDisease],["known tumor",i.knownTumor],["known infection",i.knownInfection],["acute fracture",i.acuteFracture],["major deformity",i.majorDeformity],["prior long fusion",i.priorLongFusion],["predominantly axial pain",i.predominantlyAxialPain]
   ] as [string,ClinicalStatus][];
@@ -358,7 +362,7 @@ export function evaluateCase(i:CaseInput):DecisionOutput{
   const syndromeEvidence:string[]=sy.derived==="indeterminate"||sy.derived==="not-supported"?[]
     :sy.derived.includes("claudication")?["NASS-LSS"]
     :sy.derived==="mixed"?["NASS-LDH","NASS-LSS"]
-    :["NASS-LDH","SLR-DX"];
+    :["NASS-LDH","SLR-DX","MOTOR-REFLEX-DX"];
   const localizationEvidence:string[]=!top?[]
     :top.root==="multiroot"?["NASS-LSS","ASYMPT-MRI"]
     :top.zone.includes("foramen")?["NASS-LDH","FORAMEN-GRADE","ASYMPT-MRI"]
@@ -369,8 +373,19 @@ export function evaluateCase(i:CaseInput):DecisionOutput{
     {ruleId:"LOC-001",input:"Side-, root-, level-, and zone-specific concordance",conclusion:top?`${top.root} at ${top.level} ${top.zone}`:(t.blockedReason?"Localization was not attempted; required inputs are absent":"No concordant candidate localization was established from the available data"),evidenceIds:localizationEvidence,strength:top?"moderate":"consensus"}
   ];
   if(scopeNotes.some(x=>x.includes("L3 exiting root"))) trace.push({ruleId:"SCOPE-001",input:"Documented finding outside the validated root scope",conclusion:"A documented imaging finding implicates a root outside the current L4/L5/S1 module and was not reconciled.",evidenceIds:[],strength:"consensus"});
-  if(i.injectionResponse!=="not-tried"&&i.injectionResponse!=="unknown") trace.push({ruleId:"INJ-001",input:"Injection type, level, side, and response",conclusion:"Injection response is treated as supportive context only.",evidenceIds:["NASS-LDH"],strength:"limited"});
+  if(i.injectionResponse!=="not-tried"&&i.injectionResponse!=="unknown") trace.push({ruleId:"INJ-001",input:"Injection type, level, side, and response",conclusion:"Injection response is treated as supportive context only and does not establish the symptomatic level.",evidenceIds:i.injectionLevel!=="unknown"&&i.injectionLevel!=="not-applicable"?["ESI-EVIDENCE","SNRB-DX"]:["ESI-EVIDENCE"],strength:"limited"});
   if(fus.status==="factors-documented") trace.push({ruleId:"FUS-001",input:"Level-specific instability, foraminal compromise, planned destabilization, revision, pseudarthrosis, and deformity",conclusion:"Independent fusion-rationale factor(s) documented; this does not establish that fusion is indicated.",evidenceIds:["NORDSTEN-DS","SWEDISH-LSS"],strength:"moderate"});
   else if(fus.status==="incompletely-assessed") trace.push({ruleId:"FUS-001",input:"Required level-specific fusion-rationale fields",conclusion:"Fusion-rationale assessment is incomplete.",evidenceIds:[],strength:"consensus"});
+  // Optimization evidence is emitted only for risk factors actually recorded, and only when
+  // an operative pathway is under consideration. No factor present -> no citation.
+  const optIds:string[]=[];
+  if(rk.status==="available"){
+    if(i.smokingStatus==="current"||isPresent(i.nicotineVaping)||isPresent(i.smokelessTobacco)) optIds.push("SMOKING-FUSION");
+    if(!["none","not-assessed"].includes(i.diabetesType)) optIds.push("GLYCEMIC-SSI");
+    if(i.proposedProcedure.includes("fusion")&&(i.boneHealth==="osteoporosis"||i.boneHealth==="osteopenia"||isPresent(i.fragilityFracture))) optIds.push("BONE-INSTRUMENT");
+    if(isPresent(i.chronicOpioidUse)||(i.opioidMme.status==="measured"&&i.opioidMme.value!==null&&i.opioidMme.value>0)) optIds.push("OPIOID-OUTCOME");
+  }
+  if(optIds.length) trace.push({ruleId:"OPT-001",input:"Recorded modifiable perioperative risk factors",conclusion:"Optimization considerations apply to the recorded risk factors. These inform preparation and discussion, not treatment selection.",evidenceIds:optIds,strength:"limited"});
+  if(i.priorSurgeryType!=="none"&&i.priorSurgeryType!=="not-assessed") trace.push({ruleId:"REV-001",input:"Prior lumbar surgery",conclusion:"Prior surgery requires review of operative history and postoperative anatomy before a target is advanced.",evidenceIds:["REVISION-DISEASE"],strength:"limited"});
   return {urgency:progressionConflict?"indeterminate":sf.urgency,urgencyReason:progressionConflict?"Progressive weakness is documented inconsistently across sections.":sf.reason,applicability:app,syndrome:sy,neurologic:neuro,targets:t.targets,highlights,missing:[...new Set(missing)],scopeNotes:[...new Set(scopeNotes)],mimics:[...new Set(mimics)],nextSteps:[...new Set(nextSteps)],nonoperative,specialistReview:specialist,fusion:fus,risk:rk,concordance,ruleTrace:trace};
 }

@@ -1,16 +1,21 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { createBlankCase, createDemoCase } from "../lib/caseFactory.ts";
 import { evaluateCase } from "../lib/decisionEngine.ts";
 import { validateCaseInput } from "../lib/validation.ts";
 import { projectForMode, suppressedFields } from "../lib/modeProjection.ts";
 import { EVIDENCE_REGISTRY, getEvidenceList, FRAMEWORK_ONLY_EVIDENCE } from "../lib/evidence.ts";
+import { RAPID_REQUIREMENTS, outstandingRapidRequirements, comprehensiveSuggestions } from "../lib/rapidRequirements.ts";
+import { buildPriorityAlerts } from "../lib/priorityAlerts.ts";
+import { stripIdentifiers, DRAFT_STORAGE_KEY } from "../lib/draftStorage.ts";
 
 let passed = 0;
 const test = (name, fn) => { fn(); passed++; console.log(`  ok  ${name}`); };
 
 const SAFETY_KEYS = ["urinaryRetention","urinarySensationLoss","urinaryInitiationDifficulty","overflowIncontinence","saddleSensoryChange","bilateralSevereDeficit","progressiveWeakness","feverOrSystemicInfection","cancerWarning","traumaOrFractureWarning"];
-const clearSafety = (c) => { for (const k of SAFETY_KEYS) c[k] = "absent"; return c; };
+const clearSafety = (c) => { for (const k of SAFETY_KEYS) c[k] = "absent"; c.lumbarScopeConfirmed = "yes"; return c; };
+/** blank case that is in scope but has nothing else answered */
+const inScopeBlank = () => { const c = createBlankCase(); c.lumbarScopeConfirmed = "yes"; return c; };
 
 console.log("\n-- Untested limbs must never be scored as normal --");
 
@@ -52,7 +57,7 @@ test("sensory or reflex data alone cannot yield a normal motor severity", () => 
 });
 
 test("a negative rapid motor screen does not invent examination reliability", () => {
-  const c = createBlankCase();
+  const c = inScopeBlank();
   c.rapidMotorScreen = "absent";
   const r = evaluateCase(c);
   assert.equal(r.neurologic.reliability, "indeterminate",
@@ -63,7 +68,7 @@ test("a negative rapid motor screen does not invent examination reliability", ()
 });
 
 test("a documented reliability is still honoured on a negative rapid screen", () => {
-  const c = createBlankCase();
+  const c = inScopeBlank();
   c.rapidMotorScreen = "absent"; c.examConfidence = "high";
   assert.equal(evaluateCase(c).neurologic.reliability, "high");
 });
@@ -147,7 +152,7 @@ test("no output field uses banned definitive language", () => {
   const probes = [
     clearSafety(createBlankCase()),
     clearSafety(createDemoCase()),
-    createBlankCase(),
+    inScopeBlank(),
     (() => { const c = clearSafety(createDemoCase()); c.imagesReviewed = "absent"; return c; })(),
     (() => { const c = clearSafety(createDemoCase()); c.rapidImagingScreen = "absent"; return c; })(),
   ];
@@ -326,15 +331,15 @@ test("getEvidenceList drops unknown IDs rather than throwing", () => {
 console.log("\n-- Preserved behaviour (must not regress) --");
 
 test("emergency escalation still fires on a single positive red flag", () => {
-  const c = createBlankCase();
+  const c = inScopeBlank();
   c.urinaryRetention = "present";
   assert.equal(evaluateCase(c).urgency, "emergency");
 });
 
 test("incomplete safety screening still blocks a routine conclusion", () => {
-  const r = evaluateCase(createBlankCase());
+  const r = evaluateCase(inScopeBlank());
   assert.equal(r.urgency, "indeterminate");
-  assert.ok(validateCaseInput(createBlankCase()).some(x => x.id === "safety-incomplete" && x.severity === "error"));
+  assert.ok(validateCaseInput(inScopeBlank()).some(x => x.id === "safety-incomplete" && x.severity === "error"));
 });
 
 test("severe imaging without clinical support still yields no candidate", () => {
@@ -373,7 +378,7 @@ test("severe bilateral deficit is asked separately from bladder and saddle sympt
 
 test("clearing the bladder composite leaves the bilateral red flag unanswered", () => {
   // simulate: clinician answers "No" to bladder/saddle only
-  const c = createBlankCase();
+  const c = inScopeBlank();
   for (const k of ["urinaryRetention","urinarySensationLoss","urinaryInitiationDifficulty","overflowIncontinence","saddleSensoryChange"]) c[k] = "absent";
   const r = evaluateCase(c);
   assert.equal(r.urgency, "indeterminate",
@@ -442,18 +447,321 @@ test("the vascular-claudication discriminator is reachable and still fires", () 
 
 
 test("rapid mode stays within the mandatory-confirmation budget", () => {
+  assert.ok(RAPID_REQUIREMENTS.length >= 12 && RAPID_REQUIREMENTS.length <= 18,
+    `rapid review must sit within 12-18 mandatory confirmations; the list defines ${RAPID_REQUIREMENTS.length}`);
+});
+
+test("the outstanding counter reaches zero only when every requirement is answered", () => {
+  const blank = createBlankCase();
+  assert.equal(outstandingRapidRequirements(blank).length, RAPID_REQUIREMENTS.length,
+    "a blank case must show every confirmation as outstanding");
+  const done = clearSafety(createDemoCase());
+  done.priorSurgeryType = "none"; done.proposedProcedure = "none";
+  assert.equal(outstandingRapidRequirements(done).length, 0,
+    `still outstanding: ${outstandingRapidRequirements(done).map(r => r.key).join(", ")}`);
+});
+
+test("the counter is a count, not a completion percentage", () => {
   const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
-  const cards = ["Rapid orientation","Rapid safety screen","Rapid syndrome check",
-                 "Focused motor screen","Rapid imaging confirmation","Rapid treatment context"];
-  let mandatory = 0;
-  for (const c of cards) {
-    const seg = ui.split(c)[1].split("</Card>")[0];
-    // conditional branches are rendered inside {cond&&...}; count only unconditional controls
-    const withoutBranches = seg.replace(/\{[a-zA-Z.="\s!==&|]*&&<[\s\S]*?\/div>\}/g, "");
-    mandatory += (withoutBranches.match(/<StatusField|<Field label=|<MeasurementField/g) || []).length;
+  assert.ok(/required confirmation/.test(ui));
+  assert.ok(!/%\s*complete|completion percentage|percentComplete/i.test(ui),
+    "a completion percentage misrepresents remaining clinical importance");
+});
+
+
+console.log("\n-- v28.4: versioning and packaging --");
+
+test("package, application and installer versions agree", () => {
+  const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+  const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
+  const appVersion = readFileSync("lib/appVersion.ts", "utf8");
+  const installer = readFileSync("install-v28.4.ps1", "utf8");
+  assert.equal(pkg.version, "0.28.4", "package.json version");
+  assert.equal(lock.version, "0.28.4", "package-lock.json version");
+  assert.ok(appVersion.includes('APP_VERSION = "28.4.0"'), "APP_VERSION");
+  assert.ok(installer.includes('$packageVersion   = "0.28.4"'), "installer package version");
+  assert.ok(installer.includes('$appVersion       = "28.4.0"'), "installer app version");
+  assert.ok(installer.includes('$release          = "v28.4"'), "installer release");
+});
+
+test("no stale version strings remain in release-facing files", () => {
+  for (const f of ["README.md", "install-v28.4.ps1", "package.json", "package-lock.json",
+                   "lib/appVersion.ts", "scripts/engine-tests.mjs", "scripts/verify.sh"]) {
+    const text = readFileSync(f, "utf8");
+    // the installer legitimately deletes older installers by name; ignore those lines
+    const lines = text.split("\n").filter(l => !/Remove-Item.*install-v28\.[23]\.ps1/.test(l));
+    for (const stale of ["v28.2", "v28.3", "0.28.2", "0.28.3", "28.2.0", "28.3.0"]) {
+      const hit = lines.find(l => l.includes(stale));
+      assert.ok(!hit, `${f} still references ${stale}: ${hit}`);
+    }
   }
-  assert.ok(mandatory <= 18,
-    `rapid review must stay at or under 18 mandatory confirmations; counted ${mandatory}`);
+});
+
+test("the old installer is gone and the new one exists", () => {
+  assert.ok(!existsSync("install-v28.2.ps1"));
+  assert.ok(!existsSync("install-v28.3.ps1"));
+  assert.ok(existsSync("install-v28.4.ps1"));
+});
+
+test("the installer runs the full verification chain with exit-code checks", () => {
+  const ps = readFileSync("install-v28.4.ps1", "utf8");
+  for (const cmd of ["npm install", "npm run test:engine", "npm run test:regression",
+                     "npm run typecheck", "npm run build"]) {
+    assert.ok(ps.includes(cmd), `installer must run "${cmd}"`);
+  }
+  // every npm invocation must be followed by an exit-code assertion
+  const lines = ps.split("\n").map(l => l.trim());
+  lines.forEach((line, idx) => {
+    if (/^npm (install|run )/.test(line)) {
+      const next = lines.slice(idx + 1).find(l => l.length > 0);
+      assert.ok(/Assert-LastExitCode/.test(next ?? ""),
+        `"${line}" is not followed by an exit-code check`);
+    }
+  });
+  assert.ok(!ps.includes("audit fix --force"), "must not use npm audit fix --force");
+  // success banner must come after the build
+  assert.ok(ps.lastIndexOf("npm run build") < ps.indexOf("installed and verified"),
+    "success banner must follow the build");
+});
+
+console.log("\n-- v28.4: lumbar scope confirmation --");
+
+test("scope is a lumbar yes/no/uncertain confirmation, not a region module menu", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(ui.includes("primarily lumbar/lumbosacral?"), "scope confirmation must be present");
+  assert.ok(!/options=\{\["not-assessed","lumbar","cervical"/.test(ui),
+    "a selectable cervical/thoracic module menu implies modules that do not exist");
+});
+
+test("unconfirmed scope blocks the lumbar pathway", () => {
+  const c = clearSafety(createDemoCase());
+  c.lumbarScopeConfirmed = "not-assessed";
+  assert.equal(evaluateCase(c).applicability.treatment, "out-of-scope");
+  assert.ok(validateCaseInput(c).some(x => x.id === "scope-unconfirmed" && x.severity === "error"));
+});
+
+test("'no' and 'uncertain' both withhold localization and treatment output", () => {
+  for (const answer of ["no", "uncertain"]) {
+    const c = clearSafety(createDemoCase());
+    c.lumbarScopeConfirmed = answer;
+    const r = evaluateCase(c);
+    assert.equal(r.applicability.treatment, "out-of-scope", `scope=${answer}`);
+    assert.equal(r.specialistReview.status, "additional-assessment", `scope=${answer}`);
+    assert.ok(validateCaseInput(c).some(x => x.id === "scope-outside" && x.severity === "error"));
+  }
+});
+
+test("safety screening still functions when the case is out of scope", () => {
+  const c = createBlankCase();
+  c.lumbarScopeConfirmed = "no";
+  c.urinaryRetention = "present";
+  assert.equal(evaluateCase(c).urgency, "emergency",
+    "an emergency must still escalate for a non-lumbar case");
+});
+
+console.log("\n-- v28.4: mode round-trip and snapshot --");
+
+test("switching rapid to comprehensive and back preserves the stored case", () => {
+  const full = clearSafety(createDemoCase());
+  const before = JSON.stringify(full);
+  projectForMode(full, "rapid");
+  projectForMode(full, "comprehensive");
+  projectForMode(full, "rapid");
+  assert.equal(JSON.stringify(full), before, "round-tripping must not mutate stored data");
+  // and comprehensive still sees the full picture
+  assert.equal(projectForMode(full, "comprehensive").rightSensoryRoot, full.rightSensoryRoot);
+});
+
+test("the frozen snapshot does not track later edits", () => {
+  const c = clearSafety(createDemoCase());
+  const snapshot = structuredClone(c);
+  const frozen = evaluateCase(snapshot);
+  c.side = "left";                       // clinician keeps editing after generating
+  const live = evaluateCase(c);
+  assert.notDeepEqual(frozen.concordance, live.concordance,
+    "the frozen result must not follow the live form");
+  assert.deepEqual(frozen, evaluateCase(snapshot), "the snapshot must remain reproducible");
+});
+
+test("the handoff is labelled with a snapshot time", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(ui.includes("Generated from assessment snapshot at"));
+});
+
+console.log("\n-- v28.4: do-not-miss prioritization --");
+
+test("alerts are tiered and capped", () => {
+  const c = createBlankCase();  // maximally incomplete
+  const alerts = buildPriorityAlerts(evaluateCase(c), validateCaseInput(c), "rapid");
+  assert.ok(alerts.length > 0 && alerts.length <= 6, `expected 1-6 alerts, got ${alerts.length}`);
+  for (const a of alerts) assert.ok(["blocking","important","advisory"].includes(a.tier));
+  const tiers = alerts.map(a => ({ blocking: 0, important: 1, advisory: 2 })[a.tier]);
+  assert.deepEqual(tiers, [...tiers].sort((x, y) => x - y), "alerts must be ordered by tier");
+});
+
+test("every alert carries a direct action", () => {
+  const c = createBlankCase();
+  for (const a of buildPriorityAlerts(evaluateCase(c), validateCaseInput(c), "comprehensive")) {
+    assert.ok(["Review","Edit","Confirm","Switch to Comprehensive"].includes(a.action), a.action);
+  }
+});
+
+test("low-value research warnings stay out of the do-not-miss list", () => {
+  const c = clearSafety(createDemoCase());
+  c.patientGoal = "";                    // produces the advisory goal-missing info issue
+  const alerts = buildPriorityAlerts(evaluateCase(c), validateCaseInput(c), "comprehensive");
+  assert.ok(!alerts.some(a => a.id === "goal-missing"),
+    "documentation advisories must not compete with clinical conflicts");
+});
+
+test("a severe deficit with limited reliability is surfaced", () => {
+  const c = clearSafety(createDemoCase());
+  c.rightAnkleDorsiflexion = "2"; c.examConfidence = "low";
+  const alerts = buildPriorityAlerts(evaluateCase(c), validateCaseInput(c), "comprehensive");
+  assert.ok(alerts.some(a => a.id === "severe-deficit-low-reliability"));
+});
+
+test("a proposed level without imaging is surfaced as blocking", () => {
+  const c = clearSafety(createDemoCase());
+  c.proposedProcedure = "decompression"; c.proposedLevels = ["L3-4"];
+  const alerts = buildPriorityAlerts(evaluateCase(c), validateCaseInput(c), "comprehensive");
+  assert.ok(alerts.some(a => a.tier === "blocking" && /L3-4/.test(a.detail)));
+});
+
+console.log("\n-- v28.4: conditional evidence --");
+
+test("injection evidence appears only when injection information contributes", () => {
+  const none = clearSafety(createDemoCase()); none.injectionResponse = "not-tried";
+  none.injectionLevel = "not-applicable"; none.injectionSide = "not-assessed";
+  const withInj = clearSafety(createDemoCase());
+  const idsNone = evaluateCase(none).ruleTrace.flatMap(r => r.evidenceIds);
+  const idsWith = evaluateCase(withInj).ruleTrace.flatMap(r => r.evidenceIds);
+  assert.ok(!idsNone.includes("ESI-EVIDENCE"));
+  assert.ok(idsWith.includes("ESI-EVIDENCE"));
+  assert.ok(idsWith.includes("SNRB-DX"), "a known target cites the level-specificity limitation");
+});
+
+test("optimization evidence appears only for risk factors actually recorded", () => {
+  const clean = clearSafety(createDemoCase());
+  clean.proposedProcedure = "decompression"; clean.proposedLevels = ["L4-5"];
+  assert.ok(!evaluateCase(clean).ruleTrace.some(r => r.ruleId === "OPT-001"),
+    "no recorded risk factor means no optimization citation");
+
+  const smoker = structuredClone(clean); smoker.smokingStatus = "current";
+  const ids = evaluateCase(smoker).ruleTrace.find(r => r.ruleId === "OPT-001").evidenceIds;
+  assert.ok(ids.includes("SMOKING-FUSION"));
+  assert.ok(!ids.includes("OPIOID-OUTCOME"), "unrecorded factors must not be cited");
+});
+
+test("bone-health evidence is cited only for instrumented pathways", () => {
+  const decomp = clearSafety(createDemoCase());
+  decomp.proposedProcedure = "decompression"; decomp.proposedLevels = ["L4-5"];
+  decomp.boneHealth = "osteoporosis";
+  assert.ok(!evaluateCase(decomp).ruleTrace.flatMap(r => r.evidenceIds).includes("BONE-INSTRUMENT"),
+    "bone-health instrumentation evidence does not apply to decompression alone");
+});
+
+test("prior surgery cites revision evidence with the correct wording", () => {
+  const c = clearSafety(createDemoCase());
+  c.priorSurgeryType = "discectomy";
+  const rule = evaluateCase(c).ruleTrace.find(r => r.ruleId === "REV-001");
+  assert.ok(rule.evidenceIds.includes("REVISION-DISEASE"));
+  assert.ok(/operative history and postoperative anatomy/.test(rule.conclusion));
+});
+
+test("the expanded registry keeps full metadata on every entry", () => {
+  assert.ok(Object.keys(EVIDENCE_REGISTRY).length >= 25,
+    "the registry should cover the active clinical domains");
+  for (const [id, item] of Object.entries(EVIDENCE_REGISTRY)) {
+    for (const f of ["citation","url","studyType","population","mainFinding",
+                     "keyExclusions","applicability","limitations","reviewDate"]) {
+      assert.ok(item[f] && String(item[f]).trim(), `${id} missing ${f}`);
+    }
+  }
+});
+
+test("the library is labelled curated, never comprehensive", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(/[Cc]urated/.test(ui));
+  assert.ok(!/comprehensive evidence library|exhaustive evidence/i.test(ui));
+});
+
+console.log("\n-- v28.4: draft storage and instrumentation --");
+
+test("drafts strip free-text fields that could carry identifiers", () => {
+  const c = clearSafety(createDemoCase());
+  c.studyId = "MRN-12345"; c.patientGoal = "Jane Doe wants to walk";
+  const stripped = stripIdentifiers(c);
+  assert.equal(stripped.studyId, "");
+  assert.equal(stripped.patientGoal, "");
+  assert.equal(stripped.side, c.side, "clinical fields must survive stripping");
+  const serialised = JSON.stringify(stripped);
+  assert.ok(!serialised.includes("MRN-12345"));
+  assert.ok(!serialised.includes("Jane Doe"));
+});
+
+test("draft storage is labelled as prototype and makes no compliance claim", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(ui.includes("Prototype local draft storage"));
+  assert.ok(ui.includes("Do not enter directly identifying patient information"));
+  assert.ok(!/HIPAA[- ]compliant storage(?! unless)/i.test(ui.replace(/not authenticated or HIPAA-compliant storage/g, "")),
+    "must not claim HIPAA-compliant storage");
+});
+
+test("clearing a draft requires confirmation", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(ui.includes("confirmClear"));
+  assert.ok(ui.includes("Discard the saved draft?"));
+});
+
+test("instrumentation records counts and timings, not clinical values", () => {
+  const src = readFileSync("lib/draftStorage.ts", "utf8");
+  const metricsType = src.split("export type UsabilityMetrics")[1].split("};")[0];
+  for (const f of ["patientGoal","studyId","imagingMatrix","proposedLevels","hba1c"]) {
+    assert.ok(!metricsType.includes(f), `metrics must not carry ${f}`);
+  }
+  assert.ok(metricsType.includes("elapsedSeconds") && metricsType.includes("fieldEdits"));
+});
+
+test("no validated time-saving claim is displayed", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(!/saves? (physicians? )?\d+ ?(minutes|min|seconds)/i.test(ui));
+});
+
+console.log("\n-- v28.4: entry-burden rules --");
+
+test("conditional fields are not asked before they are relevant", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  // injection target only when a response is recorded
+  assert.ok(ui.includes("showInjectionTarget&&"));
+  // fusion detail only when a fusion pathway is chosen
+  assert.ok(ui.includes("showFusion&&"));
+  // prior-surgery complications only once prior surgery is recorded
+  assert.ok(ui.includes('data.priorSurgeryType!=="none"&&data.priorSurgeryType!=="not-assessed"&&'));
+  // CPAP only when sleep apnoea is recorded
+  assert.ok(ui.includes('data.sleepApnea==="present"&&'));
+  // HbA1c only when diabetes is recorded
+  assert.ok(ui.includes('data.diabetesType!=="none"&&data.diabetesType!=="not-assessed"&&'));
+});
+
+test("rapid mode does not expose comprehensive-only instruments", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  const rapidBlocks = ["Rapid orientation","Rapid safety screen","Rapid syndrome check",
+                       "Focused motor screen","Rapid imaging confirmation","Rapid treatment context"]
+    .map(c => ui.split(c)[1].split("</Card>")[0]).join("");
+  for (const banned of ["baselineOdi","baselinePromisPf","baselinePromisPi",
+                        "fusionMatrix","frailtyScale","dexTScore","adjudication"]) {
+    assert.ok(!rapidBlocks.includes(banned), `rapid mode must not expose ${banned}`);
+  }
+});
+
+test("comprehensive escalation is suggested, never forced", () => {
+  const c = clearSafety(createDemoCase());
+  c.priorSurgeryType = "fusion";
+  assert.ok(comprehensiveSuggestions(c).some(x => x.includes("prior lumbar surgery")));
+  const clean = clearSafety(createDemoCase());
+  clean.priorSurgeryType = "none";
+  assert.equal(comprehensiveSuggestions(clean).length, 0);
 });
 
 console.log(`\n${passed} regression tests passed\n`);

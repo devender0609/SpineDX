@@ -37,7 +37,7 @@ export function createBlankFusionMatrix(): FusionLevelFinding[] {
 
 export function createBlankCase(): CaseInput {
   return {
-    studyId: "", primaryRegion: "lumbar",
+    studyId: "", primaryRegion: "lumbar", lumbarScopeConfirmed: "not-assessed",
     age: missingMeasurement("years"), sexAtBirth: "unknown", symptomDurationWeeks: missingMeasurement("weeks"), side: "not-assessed",
     clinicianPhenotype: "not-assessed", clinicianSuspectedRoot: "not-assessed", backPainNrs: missingMeasurement("0-10"), legPainNrs: missingMeasurement("0-10"),
     baselineOdi: missingMeasurement("0-100"), baselinePromisPf: missingMeasurement("T-score"), baselinePromisPi: missingMeasurement("T-score"),
@@ -68,7 +68,7 @@ export function createBlankCase(): CaseInput {
 
 export function createDemoCase(): CaseInput {
   const c = createBlankCase();
-  c.studyId = "DEMO-001"; c.primaryRegion = "lumbar";
+  c.studyId = "DEMO-001"; c.primaryRegion = "lumbar"; c.lumbarScopeConfirmed = "yes";
   c.age = measured(66, "years"); c.sexAtBirth = "female"; c.symptomDurationWeeks = measured(32, "weeks"); c.side = "right";
   c.clinicianPhenotype = "radicular"; c.clinicianSuspectedRoot = "L5"; c.backPainNrs = measured(4, "0-10"); c.legPainNrs = measured(8, "0-10");
   c.baselineOdi = measured(42, "0-100"); c.baselinePromisPf = measured(38, "T-score"); c.baselinePromisPi = measured(64, "T-score");

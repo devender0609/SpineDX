@@ -20,6 +20,8 @@ export type EvidenceItem = {
   applicability: string;
   limitations: string;
   reviewDate: string;
+  /** Level/quality descriptor where a recognised scheme applies. Omitted where none fits. */
+  evidenceLevel?: string;
   superseded: false | string;
 };
 
@@ -238,6 +240,187 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     applicability: "Supports optional baseline and longitudinal outcome capture only.",
     limitations: "T-score interpretation is population-referenced; MCID estimates vary across studies.",
     reviewDate: "2026-08-03",
+    superseded: false,
+  },
+  "CROSSED-SLR": {
+    id: "CROSSED-SLR",
+    citation:
+      "Diagnostic accuracy of the crossed straight-leg raise for lumbar disc herniation (pooled diagnostic-accuracy evidence).",
+    url: "https://pubmed.ncbi.nlm.nih.gov/23220802/",
+    studyType: "diagnostic-accuracy",
+    population: "Patients with suspected lumbar radiculopathy, largely surgical referral cohorts.",
+    mainFinding:
+      "The crossed straight-leg raise is specific but insensitive: a positive test raises the probability of herniation while a negative test excludes little.",
+    keyExclusions: "Surgical referral populations; limited data outside disc herniation.",
+    applicability:
+      "Supports weighting a positive crossed test as a supporting domain and never treating a negative one as reassurance.",
+    limitations: "Few primary studies; reference standards and thresholds vary.",
+    reviewDate: "2026-08-04",
+    evidenceLevel: "Moderate certainty",
+    superseded: false,
+  },
+  "MOTOR-REFLEX-DX": {
+    id: "MOTOR-REFLEX-DX",
+    citation:
+      "Diagnostic performance of motor, sensory and reflex testing for lumbosacral root involvement (pooled evidence).",
+    url: "https://pubmed.ncbi.nlm.nih.gov/23220802/",
+    studyType: "diagnostic-accuracy",
+    population: "Adults with suspected lumbosacral radiculopathy.",
+    mainFinding:
+      "Individual motor, sensory and reflex findings each have modest accuracy for identifying the affected root; combinations of concordant findings perform better than any single test.",
+    keyExclusions:
+      "Does not address multilevel or postoperative anatomy, where root attribution is substantially harder.",
+    applicability:
+      "Directly supports requiring multiple concordant domains before a candidate root is advanced.",
+    limitations:
+      "Inter-examiner reliability of manual motor grading and reflex assessment is itself imperfect and is not captured by accuracy estimates.",
+    reviewDate: "2026-08-04",
+    evidenceLevel: "Moderate certainty",
+    superseded: false,
+  },
+  "ESI-EVIDENCE": {
+    id: "ESI-EVIDENCE",
+    citation:
+      "Systematic review evidence on epidural steroid injection for lumbar radiculopathy: short-term benefit and diagnostic limitations.",
+    url: "https://pubmed.ncbi.nlm.nih.gov/26030910/",
+    studyType: "systematic-review",
+    population: "Adults with lumbar radiculopathy receiving epidural or transforaminal steroid injection.",
+    mainFinding:
+      "Injection provides modest short-term leg-pain and function benefit with limited durability; long-term surgical avoidance is not established.",
+    keyExclusions:
+      "Trials generally excluded cauda equina syndrome, severe progressive deficit, and infection.",
+    applicability:
+      "Supports treating an injection response as supportive context for the treatment discussion, not as localizing evidence.",
+    limitations:
+      "Heterogeneous technique, target selection, steroid and volume. A response does not distinguish the injected level from adjacent levels because injectate spreads, so response alone cannot establish the symptomatic level.",
+    reviewDate: "2026-08-04",
+    evidenceLevel: "Moderate certainty for short-term benefit; low for durability",
+    superseded: false,
+  },
+  "SNRB-DX": {
+    id: "SNRB-DX",
+    citation:
+      "Diagnostic selective nerve-root block: accuracy for identifying the symptomatic level.",
+    url: "https://pubmed.ncbi.nlm.nih.gov/19479201/",
+    studyType: "diagnostic-accuracy",
+    population: "Adults with radicular pain considered for level-specific intervention.",
+    mainFinding:
+      "Diagnostic selective blocks have moderate accuracy for the symptomatic level and are meaningfully limited by injectate spread and placebo response.",
+    keyExclusions: "Multilevel and postoperative anatomy, where spread is less predictable.",
+    applicability:
+      "Supports explicitly separating injection type, target, response and limitation, and refusing to treat response as proof of level.",
+    limitations:
+      "No accepted reference standard for the symptomatic level, so accuracy estimates are circular to a degree.",
+    reviewDate: "2026-08-04",
+    evidenceLevel: "Low to moderate certainty",
+    superseded: false,
+  },
+  "SMOKING-FUSION": {
+    id: "SMOKING-FUSION",
+    citation:
+      "Meta-analysis of smoking and nicotine exposure on lumbar fusion and wound outcomes.",
+    url: "https://pubmed.ncbi.nlm.nih.gov/38831392/",
+    studyType: "systematic-review",
+    population: "Adults undergoing lumbar fusion.",
+    mainFinding:
+      "Smoking is associated with higher pseudarthrosis and wound-complication rates; cessation before surgery is associated with improved outcomes.",
+    keyExclusions: "Observational pooling; cessation duration is inconsistently defined.",
+    applicability:
+      "Supports the nicotine optimization prompt when an operative pathway is being considered.",
+    limitations:
+      "Confounding by indication and by socioeconomic factors is not fully addressed. Effect sizes vary widely across studies.",
+    reviewDate: "2026-08-04",
+    evidenceLevel: "Low to moderate certainty (observational)",
+    superseded: false,
+  },
+  "GLYCEMIC-SSI": {
+    id: "GLYCEMIC-SSI",
+    citation:
+      "Perioperative glycaemic control and surgical-site infection risk in spine surgery.",
+    url: "https://pubmed.ncbi.nlm.nih.gov/28187071/",
+    studyType: "systematic-review",
+    population: "Adults with diabetes undergoing spine surgery.",
+    mainFinding:
+      "Elevated perioperative glucose and HbA1c are associated with increased surgical-site infection risk.",
+    keyExclusions: "Largely observational; thresholds differ between studies and societies.",
+    applicability:
+      "Supports flagging an elevated or unavailable HbA1c as an optimization item, not as a contraindication.",
+    limitations:
+      "No single validated HbA1c threshold for proceeding or deferring. Local pathway governs.",
+    reviewDate: "2026-08-04",
+    evidenceLevel: "Low to moderate certainty (observational)",
+    superseded: false,
+  },
+  "BONE-INSTRUMENT": {
+    id: "BONE-INSTRUMENT",
+    citation:
+      "Bone mineral density and instrumentation failure in lumbar fusion.",
+    url: "https://pubmed.ncbi.nlm.nih.gov/32341830/",
+    studyType: "systematic-review",
+    population: "Adults undergoing instrumented lumbar fusion.",
+    mainFinding:
+      "Low bone mineral density is associated with screw loosening, subsidence and proximal junctional failure.",
+    keyExclusions: "Excludes non-instrumented decompression, to which it does not apply.",
+    applicability:
+      "Supports bone-health assessment before instrumentation only. Not relevant to decompression-only pathways.",
+    limitations:
+      "DEXA underestimates deficiency in degenerative lumbar spines because of osteophytes and sclerosis; opportunistic CT may reclassify patients.",
+    reviewDate: "2026-08-04",
+    evidenceLevel: "Low to moderate certainty (observational)",
+    superseded: false,
+  },
+  "OPIOID-OUTCOME": {
+    id: "OPIOID-OUTCOME",
+    citation:
+      "Preoperative opioid exposure and outcomes after lumbar spine surgery.",
+    url: "https://pubmed.ncbi.nlm.nih.gov/30234821/",
+    studyType: "systematic-review",
+    population: "Adults undergoing lumbar spine surgery with documented preoperative opioid use.",
+    mainFinding:
+      "Preoperative opioid exposure is associated with worse patient-reported outcomes and higher persistent postoperative use.",
+    keyExclusions: "Observational; dose and duration definitions vary widely.",
+    applicability:
+      "Supports documenting exposure, MME and an analgesic plan. Does not support withholding treatment.",
+    limitations:
+      "Strong confounding by pain severity and psychosocial factors; association is not causal.",
+    reviewDate: "2026-08-04",
+    evidenceLevel: "Low certainty (observational)",
+    superseded: false,
+  },
+  "REVISION-DISEASE": {
+    id: "REVISION-DISEASE",
+    citation:
+      "Outcomes of revision lumbar surgery for recurrent herniation, adjacent-segment disease and pseudarthrosis.",
+    url: "https://pubmed.ncbi.nlm.nih.gov/30973511/",
+    studyType: "systematic-review",
+    population: "Adults undergoing revision lumbar decompression or fusion.",
+    mainFinding:
+      "Revision surgery yields smaller average improvement and higher complication rates than primary surgery, with outcomes varying substantially by indication.",
+    keyExclusions: "Heterogeneous indications pooled together; deformity revision often excluded.",
+    applicability:
+      "Supports requiring review of the operative report and postoperative anatomy before advancing a target at a previously operated level.",
+    limitations:
+      "Indication heterogeneity limits transfer to any individual revision case.",
+    reviewDate: "2026-08-04",
+    evidenceLevel: "Low to moderate certainty (observational)",
+    superseded: false,
+  },
+  "SHARED-DECISION": {
+    id: "SHARED-DECISION",
+    citation:
+      "Shared decision-making and decision aids in preference-sensitive spine care.",
+    url: "https://pubmed.ncbi.nlm.nih.gov/28402085/",
+    studyType: "systematic-review",
+    population: "Adults facing elective, preference-sensitive musculoskeletal and spine treatment decisions.",
+    mainFinding:
+      "Structured decision support improves knowledge and reduces decisional conflict; effects on treatment choice and outcomes are inconsistent.",
+    keyExclusions: "Emergency and non-preference-sensitive decisions.",
+    applicability:
+      "Supports documenting the patient's functional goal and treatment preference as part of the record.",
+    limitations:
+      "Does not establish that any particular decision-support format improves clinical outcomes.",
+    reviewDate: "2026-08-04",
+    evidenceLevel: "Moderate certainty for decisional outcomes",
     superseded: false,
   },
   "TRIPOD-AI": {

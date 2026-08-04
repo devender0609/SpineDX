@@ -16,7 +16,8 @@ export type WorkflowMode = "rapid" | "comprehensive";
  */
 const RAPID_VISIBLE_FIELDS = [
   // Orientation
-  "studyId", "primaryRegion", "clinicianPhenotype", "side", "symptomDurationWeeks", "patientGoal",
+  "studyId", "primaryRegion", "lumbarScopeConfirmed", "clinicianPhenotype", "side",
+  "symptomDurationWeeks", "patientGoal",
   // Safety screen (composite roll-ups expand into these)
   "urinaryRetention", "urinarySensationLoss", "urinaryInitiationDifficulty", "overflowIncontinence",
   "saddleSensoryChange", "bilateralSevereDeficit", "progressiveWeakness", "weaknessProgressionBasis",
@@ -32,7 +33,7 @@ const RAPID_VISIBLE_FIELDS = [
   "imagesReviewed", "imageQuality", "rapidImagingScreen", "levelByLevelDocumented", "imagingMatrix",
   // Treatment context
   "exerciseProgramCompleted", "medicationTrialCompleted",
-  "injectionResponse", "injectionLevel", "injectionSide", "proposedProcedure",
+  "injectionResponse", "injectionLevel", "injectionSide", "proposedProcedure", "priorSurgeryType",
 ] as const satisfies readonly (keyof CaseInput)[];
 
 export const RAPID_FIELD_SET: ReadonlySet<keyof CaseInput> = new Set(RAPID_VISIBLE_FIELDS);

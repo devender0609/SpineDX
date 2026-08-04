@@ -81,9 +81,14 @@ const incompleteSafety=createDemoCase();
 incompleteSafety.urinaryRetention="not-assessed";
 assert.ok(validateCaseInput(incompleteSafety).some(x=>x.id==="safety-incomplete"&&x.severity==="error"));
 
-const cervical=createDemoCase();
-cervical.primaryRegion="cervical";
-assert.ok(validateCaseInput(cervical).some(x=>x.id==="region-outside"&&x.severity==="error"));
+// Scope is now governed by an explicit lumbar confirmation rather than a region menu.
+const outOfScope=createDemoCase();
+outOfScope.lumbarScopeConfirmed="no";
+assert.ok(validateCaseInput(outOfScope).some(x=>x.id==="scope-outside"&&x.severity==="error"));
+assert.equal(evaluateCase(outOfScope).applicability.treatment,"out-of-scope");
+const unconfirmed=createDemoCase();
+unconfirmed.lumbarScopeConfirmed="not-assessed";
+assert.ok(validateCaseInput(unconfirmed).some(x=>x.id==="scope-unconfirmed"&&x.severity==="error"));
 
 const injectionMissing=createDemoCase();
 injectionMissing.injectionResponse="brief";
@@ -143,4 +148,4 @@ r=evaluateCase(noBenefit);
 assert.ok(r.nonoperative.some(x=>x.includes("produced no benefit")));
 assert.ok(!r.nonoperative.some(x=>x.startsWith("A targeted injection may be discussed")));
 
-console.log("v28.2 smart rapid-review logic and validation tests passed");
+console.log("v28.4 engine and validation tests passed");
