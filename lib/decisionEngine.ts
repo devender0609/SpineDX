@@ -13,10 +13,11 @@ export type DecisionOutput = {
   targets:CandidateTarget[];
   highlights:HighlightFinding[];
   missing:string[];
+  scopeNotes:string[];
   mimics:string[];
   nextSteps:string[];
   nonoperative:string[];
-  specialistReview:{ status:"emergency"|"expedited"|"routine-reasonable"|"additional-assessment"|"no-invasive-target"; reasons:string[]; limitations:string[] };
+  specialistReview:{ status:"emergency"|"expedited"|"routine-reasonable"|"additional-assessment"|"localization-unresolved"; reasons:string[]; limitations:string[] };
   fusion:{ status:"factors-documented"|"incompletely-assessed"|"no-independent-factor"|"not-applicable"; level?:LumbarLevel; reasons:string[]; missing:string[] };
   risk:{ patientSpecific:string[]; procedureSpecific:string[]; generalEducation:string[]; status:"available"|"limited"|"not-assessed" };
   concordance:{ domain:string; finding:string; status:"support"|"conflict"|"missing"|"neutral" }[];
@@ -27,15 +28,52 @@ const isPresent=(s:ClinicalStatus)=>s==="present";
 const isAssessed=(s:ClinicalStatus)=>s==="present"||s==="absent"||s==="not-applicable";
 const grade=(g:MotorGrade):number|null=>g==="not-tested"?null:g==="4+"?4.5:Number(g);
 const severityValue=(s:Severity)=>s==="none"?0:s==="mild"?1:s==="moderate"?2:s==="severe"?3:null;
-const sideMatches=(caseSide:CaseInput["side"],side:"right"|"left"|"bilateral")=>caseSide==="bilateral"||side==="bilateral"||caseSide===side;
+/**
+ * Three-state laterality comparison. An undocumented or midline symptom side is
+ * MISSING information, not a conflict — treating it as a conflict fabricates a
+ * discordance the clinician never recorded.
+ */
+type SideAgreement="match"|"mismatch"|"unknown";
+const compareSide=(caseSide:CaseInput["side"],side:"right"|"left"|"bilateral"):SideAgreement=>{
+  if(caseSide==="not-assessed") return "unknown";
+  if(caseSide==="midline") return "unknown";
+  if(caseSide==="bilateral"||side==="bilateral") return "match";
+  return caseSide===side?"match":"mismatch";
+};
 
-const rootFor=(level:LumbarLevel,zone:Zone):Root|"multiroot"|null=>{
-  if(zone==="central") return "multiroot";
+/**
+ * Root mapping for the levels in the current module.
+ * Traversing root is compressed in the central canal and lateral recess;
+ * the exiting root is compressed in the foramen.
+ *   L3-4 : exiting L3 (NOT modelled — see below), traversing L4
+ *   L4-5 : exiting L4,                            traversing L5
+ *   L5-S1: exiting L5,                            traversing S1
+ *
+ * The module's validated root scope is L4/L5/S1 only. An L3-4 foraminal finding
+ * implicates the L3 exiting root, which is outside that scope. Returning null here
+ * previously caused the finding to be dropped from the output with no trace at all.
+ * It is now returned as "out-of-scope" so the engine can surface it explicitly.
+ */
+type RootResolution={kind:"root";root:Root|"multiroot"}|{kind:"out-of-scope";note:string}|{kind:"none"};
+const rootFor=(level:LumbarLevel,zone:Zone):RootResolution=>{
+  if(zone==="central") return {kind:"root",root:"multiroot"};
   const foraminal=zone.includes("foramen");
-  if(level==="L3-4") return foraminal?null:"L4";
-  if(level==="L4-5") return foraminal?"L4":"L5";
-  if(level==="L5-S1") return foraminal?"L5":"S1";
-  return null;
+  if(level==="L3-4") return foraminal
+    ?{kind:"out-of-scope",note:"L3–4 foraminal narrowing implicates the L3 exiting root, which is outside the current L4/L5/S1 localization module. It was not reconciled against the examination."}
+    :{kind:"root",root:"L4"};
+  if(level==="L4-5") return {kind:"root",root:foraminal?"L4":"L5"};
+  if(level==="L5-S1") return {kind:"root",root:foraminal?"L5":"S1"};
+  return {kind:"out-of-scope",note:`A potentially relevant finding is documented at ${level}, which is outside the current L3–4 / L4–5 / L5–S1 imaging module and was not reconciled against the examination.`};
+};
+
+/**
+ * Per-side motor summary. Returns null for `min` when NOTHING on that side was tested,
+ * so that an unexamined limb is never silently scored as 5/5.
+ */
+export type SideMotor={min:number|null;testedCount:number};
+const sideMotor=(grades:MotorGrade[]):SideMotor=>{
+  const vals=grades.map(grade).filter((x):x is number=>x!==null);
+  return {min:vals.length?Math.min(...vals):null,testedCount:vals.length};
 };
 
 function safety(i:CaseInput){
@@ -89,13 +127,26 @@ function syndrome(i:CaseInput){
 function neurologic(i:CaseInput){
   const tested=[i.rightKneeExtension,i.leftKneeExtension,i.rightAnkleDorsiflexion,i.leftAnkleDorsiflexion,i.rightGreatToeExtension,i.leftGreatToeExtension,i.rightPlantarFlexion,i.leftPlantarFlexion].map(grade).filter((x):x is number=>x!==null);
   const rationale:string[]=[];
-  if(!tested.length&&i.rightSensoryRoot==="not-tested"&&i.leftSensoryRoot==="not-tested"&&i.rightPatellarReflex==="not-tested"&&i.leftPatellarReflex==="not-tested"&&i.rightAchillesReflex==="not-tested"&&i.leftAchillesReflex==="not-tested"){
-    if(i.rapidMotorScreen==="absent") return {severity:"none" as const,reliability:"moderate" as const,rationale:["No focal motor deficit was reported on the focused motor screen; a complete neurologic examination was not recorded."]};
+  // Reliability is only ever taken from what the clinician documented. It is never assumed.
+  const statedReliability: DecisionOutput["neurologic"]["reliability"] = i.examConfidence==="not-assessed"?"indeterminate":i.examConfidence;
+  const otherDomainsUntested=i.rightSensoryRoot==="not-tested"&&i.leftSensoryRoot==="not-tested"&&i.rightPatellarReflex==="not-tested"&&i.leftPatellarReflex==="not-tested"&&i.rightAchillesReflex==="not-tested"&&i.leftAchillesReflex==="not-tested";
+  if(!tested.length&&otherDomainsUntested){
+    if(i.rapidMotorScreen==="absent") return {severity:"none" as const,reliability:statedReliability,rationale:["No focal motor deficit was identified in the rapid screen. Individual myotomes were not graded and a complete neurologic examination was not recorded."]};
     return {severity:"indeterminate" as const,reliability:"indeterminate" as const,rationale:["Neurologic examination is not sufficiently completed."]};
   }
-  const min=tested.length?Math.min(...tested):5;
+  // No motor group was graded. Sensory or reflex data alone cannot establish motor severity,
+  // so severity must stay indeterminate rather than defaulting to a normal 5/5 baseline.
+  if(!tested.length){
+    const partial:string[]=["No motor group was graded; sensory or reflex findings alone do not establish motor severity."];
+    if(i.rapidMotorScreen==="absent") partial.push("The rapid screen reported no focal motor deficit; this is not a graded myotome examination.");
+    const sensoryOrReflex=[i.rightSensoryRoot,i.leftSensoryRoot].some(x=>["L4","L5","S1","non-dermatomal"].includes(String(x)))||[i.rightPatellarReflex,i.leftPatellarReflex,i.rightAchillesReflex,i.leftAchillesReflex].some(r=>r==="reduced"||r==="absent");
+    if(sensoryOrReflex) partial.push("A sensory or reflex abnormality is documented without a graded motor examination.");
+    return {severity:(i.rapidMotorScreen==="absent"&&!sensoryOrReflex?"none":"indeterminate") as DecisionOutput["neurologic"]["severity"],reliability:statedReliability,rationale:partial};
+  }
+  const min=Math.min(...tested);
   if(min<=3) rationale.push(`lowest reliable motor grade ${min}/5`);
   else if(min<5) rationale.push(`focal motor grade below 5/5`);
+  if(tested.length<8) rationale.push(`${tested.length} of 8 motor groups graded; ungraded groups are not treated as normal`);
   if(isPresent(i.heelWalkAbnormal)||isPresent(i.toeWalkAbnormal)||isPresent(i.repeatedHeelRaiseAbnormal)) rationale.push("functional motor abnormality");
   if(isPresent(i.muscleAtrophy)) rationale.push("muscle atrophy");
   if(isPresent(i.progressiveWeakness)) rationale.push(`progressive weakness (${i.weaknessProgressionBasis})`);
@@ -103,9 +154,8 @@ function neurologic(i:CaseInput){
   if(isPresent(i.progressiveWeakness)||min<=3||isPresent(i.bilateralSevereDeficit)) severity="severe";
   else if(min<5||isPresent(i.heelWalkAbnormal)||isPresent(i.toeWalkAbnormal)||isPresent(i.repeatedHeelRaiseAbnormal)) severity="moderate";
   else if([i.rightSensoryRoot,i.leftSensoryRoot].some(x=>["L4","L5","S1","non-dermatomal"].includes(String(x)))||[i.rightPatellarReflex,i.leftPatellarReflex,i.rightAchillesReflex,i.leftAchillesReflex].some(r=>["reduced","absent"].includes(r))) severity="mild";
-  const reliability: DecisionOutput["neurologic"]["reliability"] = i.examConfidence==="not-assessed"?"indeterminate":i.examConfidence;
   if(i.weaknessQuality==="pain-limited"||i.weaknessQuality==="give-way"||i.weaknessQuality==="uncertain") rationale.push(`weakness quality is ${i.weaknessQuality}; confirmation is required`);
-  return {severity,reliability,rationale};
+  return {severity,reliability:statedReliability,rationale};
 }
 
 function addMotorEvidence(i:CaseInput,root:Root,side:"right"|"left",support:string[],conflicts:string[],unavailable:string[]){
@@ -121,18 +171,31 @@ function addMotorEvidence(i:CaseInput,root:Root,side:"right"|"left",support:stri
   if(reflex){ if(reflex==="not-tested") unavailable.push("relevant reflex not tested"); else if(reflex==="reduced"||reflex==="absent") support.push(`${root}-compatible reflex change`); }
 }
 
-function targets(i:CaseInput,sy:ReturnType<typeof syndrome>):CandidateTarget[]{
+export type TargetResult={targets:CandidateTarget[];outOfScope:string[];blockedReason:string|null};
+
+function targets(i:CaseInput,sy:ReturnType<typeof syndrome>):TargetResult{
   const out:CandidateTarget[]=[];
-  if(i.imagesReviewed!=="present"||i.levelByLevelDocumented!=="present"||i.imageQuality==="not-assessed"||i.imageQuality==="unknown") return out;
+  const outOfScope:string[]=[];
+  // Localization is gated on the inputs it actually requires. The reason is returned so the
+  // synthesis can say WHY no candidate was produced instead of implying a clinical negative.
+  if(i.imagesReviewed!=="present") return {targets:out,outOfScope,blockedReason:"Candidate localization was not attempted because direct image review is not documented. This is a documentation gap, not evidence against a compressive lesion."};
+  if(i.levelByLevelDocumented!=="present") return {targets:out,outOfScope,blockedReason:"Candidate localization was not attempted because no level and zone have been documented."};
+  if(i.imageQuality==="not-assessed"||i.imageQuality==="unknown") return {targets:out,outOfScope,blockedReason:"Candidate localization was not attempted because image quality is not documented."};
   for(const lf of i.imagingMatrix){
     const zones:{zone:Zone;severity:Severity;side:"right"|"left"|"bilateral"}[]=[
       {zone:"central",severity:lf.central,side:"bilateral"},{zone:"right-recess",severity:lf.rightRecess,side:"right"},{zone:"left-recess",severity:lf.leftRecess,side:"left"},{zone:"right-foramen",severity:lf.rightForamen,side:"right"},{zone:"left-foramen",severity:lf.leftForamen,side:"left"}
     ];
     for(const z of zones){
       const sv=severityValue(z.severity); if(sv===null||sv<1) continue;
-      const root=rootFor(lf.level,z.zone); if(!root) continue;
+      const resolution=rootFor(lf.level,z.zone);
+      if(resolution.kind==="out-of-scope"){ outOfScope.push(`${z.severity} ${z.zone.replaceAll("-"," ")} at ${lf.level}: ${resolution.note}`); continue; }
+      if(resolution.kind==="none") continue;
+      const root=resolution.root;
       const support:string[]=[]; const conflicts:string[]=[]; const unavailable:string[]=[];
-      if(!sideMatches(i.side,z.side)) conflicts.push("symptom laterality is not compatible"); else support.push("compatible laterality");
+      const agreement=compareSide(i.side,z.side);
+      if(agreement==="mismatch") conflicts.push("symptom laterality is not compatible");
+      else if(agreement==="unknown") unavailable.push("symptom laterality is not documented, so side concordance could not be checked");
+      else support.push("compatible laterality");
       if(root==="multiroot"){
         if(sy.derived==="claudication-supported"||sy.derived==="mixed") support.push("neurogenic claudication phenotype"); else if(sy.derived==="claudication-partial") support.push("partial claudication phenotype"); else conflicts.push("central stenosis lacks a supported claudication phenotype");
       } else {
@@ -151,7 +214,8 @@ function targets(i:CaseInput,sy:ReturnType<typeof syndrome>):CandidateTarget[]{
       out.push({rank:0,level:lf.level,side:z.side,root,zone:z.zone,support,conflicts,unavailable,researchScore:score});
     }
   }
-  return out.sort((a,b)=>b.researchScore-a.researchScore).slice(0,5).map((x,idx)=>({...x,rank:idx+1}));
+  const ranked=out.sort((a,b)=>b.researchScore-a.researchScore).slice(0,5).map((x,idx)=>({...x,rank:idx+1}));
+  return {targets:ranked,outOfScope,blockedReason:null};
 }
 
 function applicability(i:CaseInput){
@@ -207,13 +271,21 @@ function risk(i:CaseInput):DecisionOutput["risk"]{
 }
 
 export function evaluateCase(i:CaseInput):DecisionOutput{
-  const sf=safety(i); const sy=syndrome(i); const neuro=neurologic(i); const app=applicability(i); const t=targets(i,sy); const top=t[0];
+  const sf=safety(i); const sy=syndrome(i); const neuro=neurologic(i); const app=applicability(i);
+  const t=targets(i,sy); const top=t.targets[0];
   const missing=[...sf.missing]; const mimics=[...sy.conflicts];
-  const contradictions:string[]=[];
-  const motorRightMin=Math.min(...[i.rightKneeExtension,i.rightAnkleDorsiflexion,i.rightGreatToeExtension,i.rightPlantarFlexion].map(grade).filter((x):x is number=>x!==null),5);
-  const motorLeftMin=Math.min(...[i.leftKneeExtension,i.leftAnkleDorsiflexion,i.leftGreatToeExtension,i.leftPlantarFlexion].map(grade).filter((x):x is number=>x!==null),5);
-  const deficitSide=motorRightMin<motorLeftMin?"right":motorLeftMin<motorRightMin?"left":"bilateral or symmetric";
-  if(i.side!=="not-assessed"&&i.side!=="bilateral"&&deficitSide!=="bilateral or symmetric"&&i.side!==deficitSide) contradictions.push(`Symptoms are ${i.side}-sided, while the strongest recorded motor deficit is ${deficitSide}-sided.`);
+  const contradictions:string[]=[]; const scopeNotes:string[]=[...t.outOfScope];
+  // Per-side motor minima. An untested side yields null and is NEVER coerced to 5/5 —
+  // doing so previously produced a false side-discordance alert against the only limb examined.
+  const right=sideMotor([i.rightKneeExtension,i.rightAnkleDorsiflexion,i.rightGreatToeExtension,i.rightPlantarFlexion]);
+  const left=sideMotor([i.leftKneeExtension,i.leftAnkleDorsiflexion,i.leftGreatToeExtension,i.leftPlantarFlexion]);
+  const bothSidesTested=right.min!==null&&left.min!==null;
+  const deficitSide=!bothSidesTested?"not comparable":right.min!<left.min!?"right":left.min!<right.min!?"left":"bilateral or symmetric";
+  if(bothSidesTested&&i.side!=="not-assessed"&&i.side!=="bilateral"&&i.side!=="midline"&&deficitSide!=="bilateral or symmetric"&&i.side!==deficitSide) contradictions.push(`Symptoms are ${i.side}-sided, while the strongest recorded motor deficit is ${deficitSide}-sided.`);
+  if(!bothSidesTested&&(right.testedCount>0||left.testedCount>0)){
+    const untested=right.min===null?"right":"left";
+    missing.push(`Motor testing is recorded on one side only; the ${untested} lower limb was not graded and is not assumed normal. Side-to-side comparison is unavailable.`);
+  }
   if(i.weaknessTrajectory==="progressive"&&i.progressiveWeakness!=="present") contradictions.push("The examination records progressive weakness, but the safety screen does not record progressive weakness as present.");
   if(i.progressiveWeakness==="present"&&i.weaknessTrajectory!=="progressive") contradictions.push("The safety screen records progressive weakness, but the examination trajectory is not marked progressive.");
   const assessedImagingLevels=i.imagingMatrix.filter(f=>[f.central,f.rightRecess,f.leftRecess,f.rightForamen,f.leftForamen].some(x=>x!=="not-graded"&&x!=="none")).map(f=>f.level);
@@ -222,31 +294,34 @@ export function evaluateCase(i:CaseInput):DecisionOutput{
   if(i.injectionResponse!=="not-tried"&&i.injectionResponse!=="unknown"&&i.injectionSide!=="not-assessed"&&i.side!=="not-assessed"&&i.side!=="bilateral"&&i.injectionSide!=="bilateral"&&i.injectionSide!=="midline"&&i.injectionSide!==i.side) contradictions.push(`The injection was ${i.injectionSide}-sided, while the primary symptoms are ${i.side}-sided.`);
   missing.push(...contradictions);
   if(i.imagesReviewed!=="present") missing.push("Direct image review is not documented.");
-  if(i.rapidImagingScreen==="absent") missing.push("No potentially relevant compressive finding was reported in the rapid imaging screen.");
+  // A negative rapid screen is a RESULT, not missing information. It belongs in scope notes so
+  // it is not presented to the clinician under "information requiring resolution".
+  if(i.rapidImagingScreen==="absent") scopeNotes.push("The limited rapid review did not identify a candidate compressive finding. Individual levels and zones were not formally documented as normal.");
   else if(i.levelByLevelDocumented!=="present") missing.push("Potentially relevant levels and zones are not fully documented.");
+  if(t.blockedReason) scopeNotes.push(t.blockedReason);
   if(i.rapidMotorScreen==="present"&&i.examConfidence==="not-assessed") missing.push("Examination reliability is not documented for the recorded motor deficit.");
   if(!i.patientGoal.trim()) missing.push("The patient’s main functional goal is not documented.");
-  if(!top&&assessedImagingLevels.length) missing.push("Repeat side- and root-specific clinical localization because the recorded examination and imaging do not converge on one target.");
+  if(!top&&assessedImagingLevels.length&&!t.blockedReason) missing.push("Repeat side- and root-specific clinical localization because the recorded examination and imaging do not converge on one candidate.");
   const objectiveStrong=neuro.severity==="moderate"||neuro.severity==="severe";
   const durable=i.symptomDurationWeeks.status==="measured"&&i.symptomDurationWeeks.value!==null&&i.symptomDurationWeeks.value>=6;
   const progressionConflict=i.weaknessTrajectory==="progressive"&&i.progressiveWeakness!=="present";
   const limitations:string[]=[];
   if(neuro.reliability==="low"||neuro.reliability==="indeterminate") limitations.push("Neurologic examination reliability is limited.");
-  if(!top) limitations.push("No concordant invasive-treatment target was established.");
+  if(!top) limitations.push("Current information does not establish a concordant candidate localization.");
   let specialist:DecisionOutput["specialistReview"];
   if(sf.urgency==="emergency") specialist={status:"emergency",reasons:[sf.reason],limitations};
   else if(sf.urgency==="urgent"||progressionConflict||(neuro.severity==="severe"&&neuro.reliability!=="low")) specialist={status:"expedited",reasons:[progressionConflict?"Neurologic progression is documented inconsistently and requires prompt reconciliation.":sf.urgency==="urgent"?sf.reason:"A severe neurologic deficit is documented and requires prompt clinical reassessment."],limitations};
   else if(app.treatment==="out-of-scope") specialist={status:"additional-assessment",reasons:["The case is outside the current lumbar treatment-reconciliation module."],limitations};
   else if(top&&(durable||objectiveStrong||i.treatmentPreference==="open-to-surgery")&&top.conflicts.length<=1) specialist={status:"routine-reasonable",reasons:[durable?"Symptoms have persisted for at least six weeks.":objectiveStrong?"An objective neurologic deficit is present.":"The patient is open to specialist discussion.",`Most concordant candidate: ${top.side} ${top.root} at ${top.level} ${top.zone}.`],limitations};
   else if(sf.urgency==="indeterminate") specialist={status:"additional-assessment",reasons:[],limitations:[...limitations,"Required safety information is incomplete."]};
-  else if(!top) specialist={status:"no-invasive-target",reasons:["Current information does not establish a concordant invasive-treatment target."],limitations};
+  else if(!top) specialist={status:"localization-unresolved",reasons:["Current information does not establish a concordant candidate localization. Additional localization is needed before procedure-specific review."],limitations};
   else specialist={status:"additional-assessment",reasons:["Additional assessment may be useful before deciding whether an invasive-treatment review is appropriate."],limitations};
   const fus=fusion(i,top); const rk=risk(i);
   const syndromeDetail=sy.derived.includes("radiculopathy")&&contradictions.length?`${sy.derived.replaceAll("-"," ")}; side/root localization remains discordant.`:sy.rationale.length?sy.rationale.join("; "):"Insufficient clinical features to derive a syndrome.";
   const highlights:HighlightFinding[]=[
     {title:`Urgency: ${progressionConflict?"indeterminate":sf.urgency}`,detail:progressionConflict?"Urgency cannot be finalized until the contradictory documentation of progressive weakness is reconciled.":sf.reason,tone:sf.urgency==="emergency"?"critical":sf.urgency==="urgent"||progressionConflict?"warning":sf.urgency==="routine"?"positive":"neutral",priority:1,ruleId:"SAFE-001"},
     {title:`Syndrome: ${sy.derived.replaceAll("-"," ")}`,detail:syndromeDetail,tone:sy.derived.includes("supported")&&!contradictions.length?"positive":sy.derived==="indeterminate"?"neutral":"warning",priority:1,ruleId:"SYN-001"},
-    {title:top?`Most concordant candidate: ${top.side} ${top.root}, ${top.level} ${top.zone}`:"No concordant target established",detail:top?`${top.support.length} supporting domain(s), ${top.conflicts.length} conflict(s), ${top.unavailable.length} unavailable domain(s).`:contradictions[0]??"Imaging is not treated as symptomatic without compatible clinical findings.",tone:top&&top.conflicts.length===0?"positive":top?"info":"neutral",priority:1,ruleId:"LOC-001"},
+    {title:top?`Most concordant candidate localization: ${top.side} ${top.root}, ${top.level} ${top.zone}`:"Candidate localization unresolved",detail:top?`${top.support.length} supporting domain(s), ${top.conflicts.length} conflict(s), ${top.unavailable.length} unavailable domain(s).`:(t.blockedReason??contradictions[0]??scopeNotes[0]??"Imaging is not treated as symptomatic without compatible clinical findings."),tone:top&&top.conflicts.length===0?"positive":top?"info":"neutral",priority:1,ruleId:"LOC-001"},
     {title:`Next clinical step: ${specialist.status.replaceAll("-"," ")}`,detail:[...specialist.reasons,...specialist.limitations].join(" ")||"No additional statement.",tone:specialist.status==="emergency"?"critical":specialist.status==="expedited"?"warning":specialist.status==="routine-reasonable"?"positive":"neutral",priority:2,ruleId:"TRT-001"},
   ];
   if(fus.status!=="not-applicable") highlights.push({title:`Fusion factors: ${fus.status.replaceAll("-"," ")}`,detail:[...fus.reasons,...fus.missing.map(x=>`Missing: ${x}`)].join("; ")||"No independent factor documented.",tone:fus.status==="factors-documented"?"info":"neutral",priority:2,ruleId:"FUS-001"});
@@ -268,18 +343,34 @@ export function evaluateCase(i:CaseInput):DecisionOutput{
   if(i.priorSurgeryType!=="none"&&i.priorSurgeryType!=="not-assessed") nextSteps.push("Review the prior operative report and current postoperative imaging at the proposed level before finalizing an invasive target.");
   const concordance:DecisionOutput["concordance"]=[
     {domain:"Symptoms",finding:i.side==="not-assessed"?"Laterality not assessed":`${i.side} ${i.clinicianPhenotype} presentation`,status:i.side==="not-assessed"?"missing":"neutral"},
-    {domain:"Motor examination",finding:i.rapidMotorScreen==="absent"?"No focal motor deficit reported on focused screen":i.rapidMotorScreen==="not-assessed"&&motorRightMin===5&&motorLeftMin===5?"Not assessed":`Strongest recorded deficit: ${deficitSide}; right ${motorRightMin}/5, left ${motorLeftMin}/5`,status:contradictions.some(x=>x.startsWith("Symptoms are"))?"conflict":motorRightMin<5||motorLeftMin<5?"support":i.rapidMotorScreen==="absent"?"neutral":"missing"},
+    {domain:"Motor examination",finding:(right.testedCount===0&&left.testedCount===0)?(i.rapidMotorScreen==="absent"?"No focal motor deficit identified in the rapid screen; myotomes not individually graded":"Not assessed"):`right ${right.min===null?"not graded":`${right.min}/5`}, left ${left.min===null?"not graded":`${left.min}/5`}${bothSidesTested&&deficitSide!=="bilateral or symmetric"?`; strongest recorded deficit ${deficitSide}`:""}`,status:contradictions.some(x=>x.startsWith("Symptoms are"))?"conflict":((right.min!==null&&right.min<5)||(left.min!==null&&left.min<5))?"support":i.rapidMotorScreen==="absent"?"neutral":"missing"},
     {domain:"Imaging",finding:top?`${top.level} ${top.zone}, ${top.side} ${top.root}`:assessedImagingLevels.length?`Abnormality documented at ${assessedImagingLevels.join(", ")}, but no concordant target`:i.rapidImagingScreen==="absent"?"No potentially relevant compressive finding reported":"No potentially relevant level documented",status:top?"support":assessedImagingLevels.length?"conflict":i.rapidImagingScreen==="absent"?"neutral":"missing"},
     {domain:"Injection",finding:i.injectionResponse==="not-tried"?"No injection performed":i.injectionResponse==="unknown"?"Response unknown":`${i.injectionSide} ${i.injectionLevel}: ${i.injectionResponse==="none"?"no benefit":i.injectionResponse.replaceAll("-"," ")}`,status:contradictions.some(x=>x.toLowerCase().includes("injection"))?"conflict":i.injectionResponse==="unknown"?"missing":"neutral"},
     {domain:"Proposed pathway",finding:i.proposedProcedure==="none"?"No invasive pathway selected":i.proposedProcedure==="not-assessed"?"Not assessed":`${i.proposedProcedure.replaceAll("-"," ")} ${i.proposedLevels.join(", ")||"without a documented level"}`,status:contradictions.some(x=>x.startsWith("The proposed pathway"))?"conflict":i.proposedProcedure==="not-assessed"?"missing":"neutral"},
   ];
+  // Evidence must match the conclusion that actually fired. A completeness/escalation rule cites
+  // consensus sources; a disease-attribution rule cites disease literature; a missing-data
+  // conclusion cites nothing, because no clinical trial speaks to absent documentation.
+  const safetyEvidence:string[]=sf.urgency==="emergency"?["CES-CONSENSUS"]
+    :sf.urgency==="urgent"?["CES-CONSENSUS","ACR-LBP"]
+    :sf.urgency==="indeterminate"?["CES-CONSENSUS"]
+    :["CES-CONSENSUS"];
+  const syndromeEvidence:string[]=sy.derived==="indeterminate"||sy.derived==="not-supported"?[]
+    :sy.derived.includes("claudication")?["NASS-LSS"]
+    :sy.derived==="mixed"?["NASS-LDH","NASS-LSS"]
+    :["NASS-LDH","SLR-DX"];
+  const localizationEvidence:string[]=!top?[]
+    :top.root==="multiroot"?["NASS-LSS","ASYMPT-MRI"]
+    :top.zone.includes("foramen")?["NASS-LDH","FORAMEN-GRADE","ASYMPT-MRI"]
+    :["NASS-LDH","ASYMPT-MRI"];
   const trace:DecisionOutput["ruleTrace"]=[
-    {ruleId:"SAFE-001",input:"Required emergency and serious-pathology fields",conclusion:progressionConflict?"Progression documentation is internally inconsistent; urgency requires clinician reconciliation.":sf.reason,evidenceIds:["CES-PATH","ACR-LBP"],strength:"consensus"},
-    {ruleId:"SYN-001",input:"Symptoms, examination, tension signs, and mimics",conclusion:sy.derived,evidenceIds:sy.derived.includes("claudication")?["NASS-LSS"]:["NASS-LDH"],strength:"moderate"},
-    {ruleId:"LOC-001",input:"Side-, root-, level-, and zone-specific concordance",conclusion:top?`${top.root} at ${top.level} ${top.zone}`:"No concordant target established from the available data",evidenceIds:top?(sy.derived.includes("claudication")?["NASS-LSS"]:["NASS-LDH"]):[],strength:top?"moderate":"consensus"}
+    {ruleId:"SAFE-001",input:"Required emergency and serious-pathology fields",conclusion:progressionConflict?"Progression documentation is internally inconsistent; urgency requires clinician reconciliation.":sf.reason,evidenceIds:safetyEvidence,strength:"consensus"},
+    {ruleId:"SYN-001",input:"Symptoms, examination, tension signs, and mimics",conclusion:sy.derived.replaceAll("-"," "),evidenceIds:syndromeEvidence,strength:syndromeEvidence.length?"moderate":"consensus"},
+    {ruleId:"LOC-001",input:"Side-, root-, level-, and zone-specific concordance",conclusion:top?`${top.root} at ${top.level} ${top.zone}`:(t.blockedReason?"Localization was not attempted; required inputs are absent":"No concordant candidate localization was established from the available data"),evidenceIds:localizationEvidence,strength:top?"moderate":"consensus"}
   ];
+  if(scopeNotes.some(x=>x.includes("L3 exiting root"))) trace.push({ruleId:"SCOPE-001",input:"Documented finding outside the validated root scope",conclusion:"A documented imaging finding implicates a root outside the current L4/L5/S1 module and was not reconciled.",evidenceIds:[],strength:"consensus"});
   if(i.injectionResponse!=="not-tried"&&i.injectionResponse!=="unknown") trace.push({ruleId:"INJ-001",input:"Injection type, level, side, and response",conclusion:"Injection response is treated as supportive context only.",evidenceIds:["NASS-LDH"],strength:"limited"});
-  if(fus.status==="factors-documented") trace.push({ruleId:"FUS-001",input:"Level-specific instability, foraminal compromise, planned destabilization, revision, pseudarthrosis, and deformity",conclusion:"Independent fusion-rationale factor(s) documented; this does not establish that fusion is indicated.",evidenceIds:["NASS-DS","NORDSTEN-5Y","SWEDISH-LSS"],strength:"moderate"});
+  if(fus.status==="factors-documented") trace.push({ruleId:"FUS-001",input:"Level-specific instability, foraminal compromise, planned destabilization, revision, pseudarthrosis, and deformity",conclusion:"Independent fusion-rationale factor(s) documented; this does not establish that fusion is indicated.",evidenceIds:["NORDSTEN-DS","SWEDISH-LSS"],strength:"moderate"});
   else if(fus.status==="incompletely-assessed") trace.push({ruleId:"FUS-001",input:"Required level-specific fusion-rationale fields",conclusion:"Fusion-rationale assessment is incomplete.",evidenceIds:[],strength:"consensus"});
-  return {urgency:progressionConflict?"indeterminate":sf.urgency,urgencyReason:progressionConflict?"Progressive weakness is documented inconsistently across sections.":sf.reason,applicability:app,syndrome:sy,neurologic:neuro,targets:t,highlights,missing:[...new Set(missing)],mimics:[...new Set(mimics)],nextSteps:[...new Set(nextSteps)],nonoperative,specialistReview:specialist,fusion:fus,risk:rk,concordance,ruleTrace:trace};
+  return {urgency:progressionConflict?"indeterminate":sf.urgency,urgencyReason:progressionConflict?"Progressive weakness is documented inconsistently across sections.":sf.reason,applicability:app,syndrome:sy,neurologic:neuro,targets:t.targets,highlights,missing:[...new Set(missing)],scopeNotes:[...new Set(scopeNotes)],mimics:[...new Set(mimics)],nextSteps:[...new Set(nextSteps)],nonoperative,specialistReview:specialist,fusion:fus,risk:rk,concordance,ruleTrace:trace};
 }

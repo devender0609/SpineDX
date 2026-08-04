@@ -1,6 +1,6 @@
 {
   "name": "spinedx-tx-ai",
-  "version": "0.28.2",
+  "version": "0.28.3",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,7 +8,9 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test:engine": "node --experimental-strip-types scripts/engine-tests.mjs",
-    "verify": "npm run typecheck && npm run test:engine && npm run build"
+    "verify": "npm run typecheck && npm run test && npm run build",
+    "test:regression": "node --experimental-strip-types scripts/regression-tests.mjs",
+    "test": "npm run test:engine && npm run test:regression"
   },
   "dependencies": {
     "next": "15.5.21",

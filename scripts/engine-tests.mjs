@@ -125,7 +125,9 @@ const rapidNoMotor=createBlankCase();
 rapidNoMotor.rapidMotorScreen="absent";
 r=evaluateCase(rapidNoMotor);
 assert.equal(r.neurologic.severity,"none");
-assert.ok(r.neurologic.rationale.some(x=>x.includes("focused motor screen")));
+assert.ok(r.neurologic.rationale.some(x=>x.includes("rapid screen")));
+// the screen result must explicitly deny being a complete examination
+assert.ok(r.neurologic.rationale.some(x=>x.includes("not")&&x.includes("complete neurologic examination")));
 
 const rapidNoImaging=createDemoCase();
 rapidNoImaging.rapidImagingScreen="absent";
