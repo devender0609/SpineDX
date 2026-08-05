@@ -38,6 +38,7 @@ export function createBlankFusionMatrix(): FusionLevelFinding[] {
 export function createBlankCase(): CaseInput {
   return {
     studyId: "", primaryRegion: "lumbar", lumbarScopeConfirmed: "not-assessed",
+  rapidMotorFinding: { status: "not-assessed", side: "not-assessed", suspectedRoot: "not-assessed", testedMovement: "not-assessed", lowestObservedGrade: "not-tested", reliability: "not-assessed" },
     age: missingMeasurement("years"), sexAtBirth: "unknown", symptomDurationWeeks: missingMeasurement("weeks"), side: "not-assessed",
     clinicianPhenotype: "not-assessed", clinicianSuspectedRoot: "not-assessed", backPainNrs: missingMeasurement("0-10"), legPainNrs: missingMeasurement("0-10"),
     baselineOdi: missingMeasurement("0-100"), baselinePromisPf: missingMeasurement("T-score"), baselinePromisPi: missingMeasurement("T-score"),

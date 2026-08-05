@@ -5,9 +5,11 @@ import { evaluateCase } from "../lib/decisionEngine.ts";
 import { validateCaseInput } from "../lib/validation.ts";
 import { projectForMode, suppressedFields } from "../lib/modeProjection.ts";
 import { EVIDENCE_REGISTRY, getEvidenceList, FRAMEWORK_ONLY_EVIDENCE } from "../lib/evidence.ts";
-import { RAPID_REQUIREMENTS, outstandingRapidRequirements, comprehensiveSuggestions } from "../lib/rapidRequirements.ts";
+import { RAPID_REQUIREMENTS, outstandingRapidRequirements, comprehensiveSuggestions, applicableRapidRequirements, BASE_RAPID_REQUIREMENT_COUNT, DEFAULT_RAPID_CONTEXT } from "../lib/rapidRequirements.ts";
 import { buildPriorityAlerts } from "../lib/priorityAlerts.ts";
 import { stripIdentifiers, DRAFT_STORAGE_KEY } from "../lib/draftStorage.ts";
+import { buildExport, identifyingFieldsPresent, FULL_EXPORT_WARNING } from "../lib/researchExport.ts";
+import { createBlankAdjudication } from "../lib/caseFactory.ts";
 
 let passed = 0;
 const test = (name, fn) => { fn(); passed++; console.log(`  ok  ${name}`); };
@@ -446,17 +448,40 @@ test("the vascular-claudication discriminator is reachable and still fires", () 
 });
 
 
-test("rapid mode stays within the mandatory-confirmation budget", () => {
-  assert.ok(RAPID_REQUIREMENTS.length >= 12 && RAPID_REQUIREMENTS.length <= 18,
-    `rapid review must sit within 12-18 mandatory confirmations; the list defines ${RAPID_REQUIREMENTS.length}`);
+test("a routine rapid case needs 10-14 confirmations, 18 at most with branches", () => {
+  assert.ok(BASE_RAPID_REQUIREMENT_COUNT >= 10 && BASE_RAPID_REQUIREMENT_COUNT <= 14,
+    `routine base workflow must be 10-14; got ${BASE_RAPID_REQUIREMENT_COUNT}`);
+  assert.ok(RAPID_REQUIREMENTS.length <= 18,
+    `maximum with all branches must not exceed 18; got ${RAPID_REQUIREMENTS.length}`);
+});
+
+test("optional treatment context is not counted unless the visit includes it", () => {
+  const c = createBlankCase();
+  const base = applicableRapidRequirements(c, DEFAULT_RAPID_CONTEXT).map(r => r.key);
+  for (const optional of ["injectionResponse", "proposedProcedure",
+                          "exerciseProgramCompleted", "medicationTrialCompleted"]) {
+    assert.ok(!base.includes(optional), `${optional} must not be universally mandatory`);
+  }
+  const withCtx = applicableRapidRequirements(c, { procedureReview: true, managementContext: true });
+  assert.equal(withCtx.length, RAPID_REQUIREMENTS.length);
+});
+
+test("optional treatment context does not block a preliminary synthesis", () => {
+  const c = clearSafety(createDemoCase());
+  c.injectionResponse = "unknown"; c.proposedProcedure = "not-assessed";
+  const blocking = validateCaseInput(c).filter(x => x.severity === "error");
+  assert.deepEqual(blocking, [],
+    `unanswered optional context must not block: ${blocking.map(b => b.id).join(", ")}`);
 });
 
 test("the outstanding counter reaches zero only when every requirement is answered", () => {
   const blank = createBlankCase();
-  assert.equal(outstandingRapidRequirements(blank).length, RAPID_REQUIREMENTS.length,
-    "a blank case must show every confirmation as outstanding");
+  assert.equal(outstandingRapidRequirements(blank).length, BASE_RAPID_REQUIREMENT_COUNT,
+    "a blank case must show every applicable confirmation as outstanding");
   const done = clearSafety(createDemoCase());
   done.priorSurgeryType = "none"; done.proposedProcedure = "none";
+  done.rapidMotorFinding = { ...done.rapidMotorFinding, status: "absent" };
+  done.rapidMotorScreen = "absent";
   assert.equal(outstandingRapidRequirements(done).length, 0,
     `still outstanding: ${outstandingRapidRequirements(done).map(r => r.key).join(", ")}`);
 });
@@ -475,22 +500,22 @@ test("package, application and installer versions agree", () => {
   const pkg = JSON.parse(readFileSync("package.json", "utf8"));
   const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
   const appVersion = readFileSync("lib/appVersion.ts", "utf8");
-  const installer = readFileSync("install-v28.4.ps1", "utf8");
-  assert.equal(pkg.version, "0.28.4", "package.json version");
-  assert.equal(lock.version, "0.28.4", "package-lock.json version");
-  assert.ok(appVersion.includes('APP_VERSION = "28.4.0"'), "APP_VERSION");
-  assert.ok(installer.includes('$packageVersion   = "0.28.4"'), "installer package version");
-  assert.ok(installer.includes('$appVersion       = "28.4.0"'), "installer app version");
-  assert.ok(installer.includes('$release          = "v28.4"'), "installer release");
+  const installer = readFileSync("install-v29.0.ps1", "utf8");
+  assert.equal(pkg.version, "0.29.0", "package.json version");
+  assert.equal(lock.version, "0.29.0", "package-lock.json version");
+  assert.ok(appVersion.includes('APP_VERSION = "29.0.0"'), "APP_VERSION");
+  assert.ok(installer.includes('$packageVersion   = "0.29.0"'), "installer package version");
+  assert.ok(installer.includes('$appVersion       = "29.0.0"'), "installer app version");
+  assert.ok(installer.includes('$release          = "v29.0"'), "installer release");
 });
 
 test("no stale version strings remain in release-facing files", () => {
-  for (const f of ["README.md", "install-v28.4.ps1", "package.json", "package-lock.json",
+  for (const f of ["README.md", "install-v29.0.ps1", "package.json", "package-lock.json",
                    "lib/appVersion.ts", "scripts/engine-tests.mjs", "scripts/verify.sh"]) {
     const text = readFileSync(f, "utf8");
     // the installer legitimately deletes older installers by name; ignore those lines
-    const lines = text.split("\n").filter(l => !/Remove-Item.*install-v28\.[23]\.ps1/.test(l));
-    for (const stale of ["v28.2", "v28.3", "0.28.2", "0.28.3", "28.2.0", "28.3.0"]) {
+    const lines = text.split("\n").filter(l => !/Remove-Item.*install-v28\.[234]\.ps1/.test(l));
+    for (const stale of ["v28.2","v28.3","v28.4","0.28.2","0.28.3","0.28.4","28.2.0","28.3.0","28.4.0"]) {
       const hit = lines.find(l => l.includes(stale));
       assert.ok(!hit, `${f} still references ${stale}: ${hit}`);
     }
@@ -500,11 +525,11 @@ test("no stale version strings remain in release-facing files", () => {
 test("the old installer is gone and the new one exists", () => {
   assert.ok(!existsSync("install-v28.2.ps1"));
   assert.ok(!existsSync("install-v28.3.ps1"));
-  assert.ok(existsSync("install-v28.4.ps1"));
+  assert.ok(existsSync("install-v29.0.ps1"));
 });
 
 test("the installer runs the full verification chain with exit-code checks", () => {
-  const ps = readFileSync("install-v28.4.ps1", "utf8");
+  const ps = readFileSync("install-v29.0.ps1", "utf8");
   for (const cmd of ["npm install", "npm run test:engine", "npm run test:regression",
                      "npm run typecheck", "npm run build"]) {
     assert.ok(ps.includes(cmd), `installer must run "${cmd}"`);
@@ -747,8 +772,8 @@ test("conditional fields are not asked before they are relevant", () => {
 test("rapid mode does not expose comprehensive-only instruments", () => {
   const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
   const rapidBlocks = ["Rapid orientation","Rapid safety screen","Rapid syndrome check",
-                       "Focused motor screen","Rapid imaging confirmation","Rapid treatment context"]
-    .map(c => ui.split(c)[1].split("</Card>")[0]).join("");
+                       "Focused motor screen","Rapid imaging confirmation","Optional management context"]
+    .map(c => (ui.split(c)[1] ?? "").split("</Card>")[0]).join("");
   for (const banned of ["baselineOdi","baselinePromisPf","baselinePromisPi",
                         "fusionMatrix","frailtyScale","dexTScore","adjudication"]) {
     assert.ok(!rapidBlocks.includes(banned), `rapid mode must not expose ${banned}`);
@@ -762,6 +787,284 @@ test("comprehensive escalation is suggested, never forced", () => {
   const clean = clearSafety(createDemoCase());
   clean.priorSurgeryType = "none";
   assert.equal(comprehensiveSuggestions(clean).length, 0);
+});
+
+
+console.log("\n-- v29.0: Rapid motor model does not fabricate examination detail --");
+
+test("one L5 observation does not create two graded muscles", () => {
+  const c = clearSafety(createBlankCase());
+  c.rapidMotorScreen = "present";
+  c.rapidMotorFinding = { status: "present", side: "right", suspectedRoot: "L5",
+    testedMovement: "ankle-dorsiflexion", lowestObservedGrade: "4", reliability: "objective-reproducible" };
+  const graded = ["rightKneeExtension","leftKneeExtension","rightAnkleDorsiflexion","leftAnkleDorsiflexion",
+    "rightGreatToeExtension","leftGreatToeExtension","rightPlantarFlexion","leftPlantarFlexion"]
+    .filter(k => c[k] !== "not-tested");
+  assert.deepEqual(graded, [],
+    `a focused screen must not write Comprehensive muscle grades; wrote ${graded.join(", ")}`);
+});
+
+test("one side does not create a graded contralateral limb", () => {
+  const c = clearSafety(createBlankCase());
+  c.rapidMotorFinding = { status: "present", side: "right", suspectedRoot: "S1",
+    testedMovement: "plantar-flexion", lowestObservedGrade: "3", reliability: "objective-reproducible" };
+  assert.equal(c.leftPlantarFlexion, "not-tested");
+  const r = evaluateCase(c);
+  assert.ok(!r.missing.some(x => x.includes("strongest recorded motor deficit is left")));
+});
+
+test("the synthesis states the finding is a focused screen, not a full examination", () => {
+  const c = clearSafety(createBlankCase());
+  c.rapidMotorFinding = { status: "present", side: "right", suspectedRoot: "L5",
+    testedMovement: "ankle-dorsiflexion", lowestObservedGrade: "4", reliability: "objective-reproducible" };
+  const n = evaluateCase(c).neurologic;
+  assert.equal(n.severity, "moderate");
+  assert.ok(n.rationale.some(x => /focused screen/i.test(x)));
+  assert.ok(n.rationale.some(x => /not a full bilateral examination/i.test(x)));
+});
+
+test("rapid reliability is taken from the clinician, never assumed", () => {
+  const base = { status: "present", side: "right", suspectedRoot: "L5",
+    testedMovement: "ankle-dorsiflexion", lowestObservedGrade: "4" };
+  const cases = [["objective-reproducible","high"],["chronic-baseline","moderate"],
+                 ["pain-limited","low"],["give-way","low"],["not-assessed","indeterminate"]];
+  for (const [given, expected] of cases) {
+    const c = clearSafety(createBlankCase());
+    c.rapidMotorFinding = { ...base, reliability: given };
+    assert.equal(evaluateCase(c).neurologic.reliability, expected, `reliability ${given}`);
+  }
+});
+
+test("rapid findings stay separate from comprehensive examination data", () => {
+  const full = clearSafety(createDemoCase());
+  full.rapidMotorFinding = { status: "present", side: "left", suspectedRoot: "L4",
+    testedMovement: "knee-extension", lowestObservedGrade: "4", reliability: "pain-limited" };
+  const rapid = projectForMode(full, "rapid");
+  assert.deepEqual(rapid.rapidMotorFinding, full.rapidMotorFinding, "the focused screen survives");
+  assert.equal(rapid.rightAnkleDorsiflexion, "not-tested", "comprehensive grades are excluded");
+  assert.equal(full.rightAnkleDorsiflexion, "4", "the stored comprehensive exam is untouched");
+});
+
+test("switching modes neither fabricates nor erases examination findings", () => {
+  const full = clearSafety(createDemoCase());
+  const before = JSON.stringify(full);
+  projectForMode(full, "rapid"); projectForMode(full, "comprehensive");
+  assert.equal(JSON.stringify(full), before);
+});
+
+test("the UI never writes comprehensive muscle fields from the rapid screen", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(!ui.includes("applyRapidMotor"), "the fabricating handler must be gone");
+  assert.ok(!/AnkleDorsiflexion` as "rightAnkleDorsiflexion"\] = grade/.test(ui));
+  assert.ok(ui.includes("updateRapidMotor"));
+  assert.ok(ui.includes("Movement actually tested"));
+});
+
+console.log("\n-- v29.0: research export privacy --");
+
+test("the de-identified export actually strips every designated field", () => {
+  const c = clearSafety(createDemoCase());
+  c.studyId = "MRN-9911"; c.patientGoal = "Jane Doe, walk to church";
+  const adj = createBlankAdjudication();
+  adj.caseId = "CASE-7"; adj.siteCode = "SITE-A";
+  adj.firstReviewer = { ...adj.firstReviewer, reviewerId: "DR-SMITH", rationale: "free text here",
+    disagreementReason: "reason text", notes: "note text" };
+  const payload = buildExport({ mode: "deidentified", snapshot: c, fullCase: c, result: evaluateCase(c),
+    issues: [], adjudication: adj, workflowMode: "comprehensive", suppressed: [],
+    appVersion: "29.0.0", rulesetVersion: "r", exportSchemaVersion: "s" });
+  const text = JSON.stringify(payload);
+  for (const secret of ["MRN-9911","Jane Doe","CASE-7","SITE-A","DR-SMITH",
+                        "free text here","reason text","note text"]) {
+    assert.ok(!text.includes(secret), `de-identified export leaked "${secret}"`);
+  }
+  assert.equal(payload.deidentified, true);
+  assert.equal(payload.fullEnteredCase, undefined,
+    "the unfiltered form state must not ride along in a de-identified export");
+  assert.ok(payload.removedFields.length > 0, "removals must be itemised");
+});
+
+test("the full export is labelled not de-identified and carries the warning", () => {
+  const c = clearSafety(createDemoCase());
+  const payload = buildExport({ mode: "full", snapshot: c, fullCase: c, result: null, issues: [],
+    adjudication: createBlankAdjudication(), workflowMode: "rapid", suppressed: [],
+    appVersion: "29.0.0", rulesetVersion: "r", exportSchemaVersion: "s" });
+  assert.equal(payload.deidentified, false);
+  assert.equal(payload.exportMode, "full");
+  assert.ok(FULL_EXPORT_WARNING.includes("approved secure research environment"));
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(ui.includes("FULL_EXPORT_WARNING"), "the warning must be shown before a full export");
+  assert.ok(ui.includes("window.confirm"), "the full export needs explicit confirmation");
+});
+
+test("the export control is no longer labelled de-identified", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(ui.includes("Export research record for secure review"));
+  assert.ok(!ui.includes("Download de-identified research record"),
+    "an export that ships the full case must not be called de-identified");
+});
+
+test("the review modal lists exactly what the de-identified export removes", () => {
+  const c = clearSafety(createDemoCase());
+  c.studyId = "X1";
+  const adj = createBlankAdjudication(); adj.caseId = "C1";
+  const listed = identifyingFieldsPresent(c, adj);
+  assert.ok(listed.some(f => f.includes("studyId")));
+  assert.ok(listed.some(f => f.includes("caseId")));
+});
+
+console.log("\n-- v29.0: draft storage --");
+
+test("draft storage is off until explicitly enabled", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(ui.includes("Save an anonymous local draft on this browser?"));
+  assert.ok(ui.includes("Session only"), "a session-only alternative must be offered");
+  const src = readFileSync("lib/draftStorage.ts", "utf8");
+  assert.ok(/export function saveDraft[\s\S]{0,200}if \(!draftEnabled\(\)\) return null;/.test(src),
+    "saveDraft must refuse to write without opt-in");
+  assert.ok(/export function loadDraft[\s\S]{0,200}if \(!draftEnabled\(\)\) return null;/.test(src));
+});
+
+test("drafts expire", () => {
+  const src = readFileSync("lib/draftStorage.ts", "utf8");
+  assert.ok(src.includes("DRAFT_TTL_MS"));
+  assert.ok(/Date\.now\(\) - Date\.parse\(parsed\.savedAt\) > DRAFT_TTL_MS/.test(src),
+    "an expired draft must be discarded on read, not resurrected");
+});
+
+test("drafts are never auto-restored without an explicit Resume", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(ui.includes("Resume draft"));
+  assert.ok(!/setData\(d\.data\)[^}]*\}\s*,\s*\[\]\)/.test(ui),
+    "a draft must not be loaded into state on mount");
+});
+
+test("adjudication and research notes never enter browser drafts", () => {
+  const src = readFileSync("lib/draftStorage.ts", "utf8");
+  const draftType = src.split("export type Draft")[1].split(";")[0];
+  for (const f of ["adjudication", "reviewer", "notes", "rationale"]) {
+    assert.ok(!draftType.includes(f), `draft payload must not include ${f}`);
+  }
+});
+
+test("storage status and a clear control are visible", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(ui.includes("draft-status"));
+  assert.ok(ui.includes("Clear draft"));
+  assert.ok(ui.includes("Not approved for PHI or shared clinical workstations"));
+});
+
+console.log("\n-- v29.0: clinician feedback --");
+
+test("clinician agreement is asked, not assumed", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  for (const opt of ["Agree", "Partly agree", "Disagree", "Unable to assess"]) {
+    assert.ok(ui.includes(opt), `feedback option "${opt}" missing`);
+  }
+  assert.ok(ui.includes('clinicianAgreed:k'), "the recorded value must come from the clinician");
+});
+
+console.log("\n-- v29.0: evidence integrity --");
+
+test("no evidence entry claims to be a source it is not", () => {
+  const ng59 = EVIDENCE_REGISTRY["NICE-NG59-REDFLAGS"];
+  assert.ok(ng59, "NG59 must be present under an accurate ID");
+  assert.ok(/does NOT cover/i.test(ng59.keyExclusions),
+    "NG59's exclusion of cauda equina and progressive deficit must be recorded");
+  assert.ok(!EVIDENCE_REGISTRY["CES-CONSENSUS"],
+    "the mislabelled composite cauda equina entry must be gone");
+  assert.equal(EVIDENCE_REGISTRY["GIRFT-CES-PATHWAY"].domain, "safety");
+});
+
+test("every entry declares a domain and a verification status", () => {
+  for (const [id, e] of Object.entries(EVIDENCE_REGISTRY)) {
+    assert.ok(e.domain, `${id} has no domain`);
+    assert.ok(["verified","unverified"].includes(e.verified), `${id} has no verification status`);
+  }
+});
+
+test("verified entries carry a verification date", () => {
+  for (const [id, e] of Object.entries(EVIDENCE_REGISTRY)) {
+    if (e.verified === "verified") assert.ok(e.verifiedOn, `${id} claims verified with no date`);
+  }
+});
+
+test("safety evidence distinguishes screen content from escalation pathway", () => {
+  const c = inScopeBlank(); c.urinaryRetention = "present";
+  const ids = evaluateCase(c).ruleTrace.find(r => r.ruleId === "SAFE-001").evidenceIds;
+  assert.ok(ids.includes("GIRFT-CES-PATHWAY"));
+  assert.ok(!ids.includes("NICE-NG59-REDFLAGS"),
+    "a guideline that excludes cauda equina management must not be cited for an emergency conclusion");
+});
+
+
+console.log("\n-- v29.0: field dispositions, scope pathways, UI consolidation --");
+
+test("every previously-inert field has a documented disposition", () => {
+  const doc = readFileSync("docs/FIELD_DISPOSITIONS.md", "utf8");
+  for (const f of ["clinicianSuspectedRoot","sexAtBirth","plannedSetting",
+                   "coughSneezeProvokes","urinaryUrgencyAlone","synovialCyst"]) {
+    assert.ok(doc.includes(f), `${f} has no documented disposition`);
+  }
+});
+
+test("clinician impression is compared with the derived candidate, not fed into it", () => {
+  const c = clearSafety(createDemoCase());
+  c.clinicianSuspectedRoot = "S1";           // demo derives an L5 candidate
+  const r = evaluateCase(c);
+  assert.ok(r.targets[0], "a candidate should still be derived");
+  assert.ok(r.missing.some(x => /suspected root/i.test(x)),
+    "a divergence between impression and derivation must be surfaced");
+  // and it must not have changed the derivation itself
+  const without = clearSafety(createDemoCase());
+  assert.deepEqual(evaluateCase(without).targets[0].root, r.targets[0].root,
+    "the clinician's impression must not alter the derived candidate");
+});
+
+test("paediatric age blocks adult treatment synthesis but keeps safety documentation", () => {
+  const c = clearSafety(createDemoCase());
+  c.age = { status: "measured", value: 14 };
+  const r = evaluateCase(c);
+  assert.equal(r.applicability.treatment, "out-of-scope");
+  c.urinaryRetention = "present";
+  assert.equal(evaluateCase(c).urgency, "emergency",
+    "safety escalation must survive a paediatric out-of-scope case");
+});
+
+test("serious pathology is not treated as a generic exclusion", () => {
+  const serious = clearSafety(createDemoCase()); serious.knownInfection = "present";
+  const population = clearSafety(createDemoCase()); population.pregnant = "present";
+  const rs = evaluateCase(serious), rp = evaluateCase(population);
+  assert.notDeepEqual(rs.applicability.reasons, rp.applicability.reasons,
+    "an infection concern and a pregnancy must not produce the same reason");
+  assert.ok(rs.applicability.reasons.some(x => /infection/i.test(x)));
+  assert.ok(rp.applicability.reasons.some(x => /pregnan/i.test(x)));
+});
+
+test("no major CSS selector is declared twice outside a media query", () => {
+  const css = readFileSync("app/globals.css", "utf8");
+  const plain = css.replace(/@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/gs, "");
+  const counts = {};
+  for (const m of plain.matchAll(/([^{}]+)\{[^{}]*\}/g)) {
+    for (const sel of m[1].split(",")) {
+      const s2 = sel.trim();
+      if (s2 && !s2.startsWith("@") && !s2.startsWith("/*")) counts[s2] = (counts[s2] ?? 0) + 1;
+    }
+  }
+  const dupes = Object.entries(counts).filter(([, n]) => n > 1).map(([s2]) => s2);
+  assert.deepEqual(dupes, [], `duplicate selector declarations: ${dupes.slice(0, 8).join(", ")}`);
+});
+
+test("verified breakpoint screenshots are present in the package", () => {
+  for (const bp of ["desktop-1440","tablet-landscape-1024","tablet-portrait-768","mobile-390"]) {
+    assert.ok(existsSync(`docs/screenshots/${bp}-entry.png`), `missing capture for ${bp}`);
+  }
+});
+
+test("the verification chain includes visual checks and cannot pass them silently", () => {
+  const sh = readFileSync("scripts/verify.sh", "utf8");
+  assert.ok(sh.includes("test:visual"));
+  assert.ok(sh.includes('fail "visual checks"'));
+  assert.ok(sh.includes("SKIP_VISUAL"), "skipping must be explicit");
 });
 
 console.log(`\n${passed} regression tests passed\n`);

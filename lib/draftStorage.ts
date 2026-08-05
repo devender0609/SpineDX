@@ -1,6 +1,9 @@
 import type { CaseInput } from "./schema.ts";
 
 const DRAFT_KEY = "spinedx-draft-v1";
+const OPTIN_KEY = "spinedx-draft-optin-v1";
+/** Prototype retention window. Drafts older than this are discarded on read. */
+export const DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
 const METRICS_KEY = "spinedx-metrics-v1";
 
 export type Draft = { savedAt: string; mode: "rapid" | "comprehensive"; data: CaseInput };
@@ -18,8 +21,23 @@ export function stripIdentifiers(data: CaseInput): CaseInput {
   return copy;
 }
 
+/** Draft storage is OFF until the clinician explicitly opts in on this browser. */
+export function draftEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return window.localStorage.getItem(OPTIN_KEY) === "yes"; } catch { return false; }
+}
+
+export function setDraftEnabled(on: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (on) window.localStorage.setItem(OPTIN_KEY, "yes");
+    else { window.localStorage.removeItem(OPTIN_KEY); window.localStorage.removeItem(DRAFT_KEY); }
+  } catch { /* storage unavailable */ }
+}
+
 export function saveDraft(data: CaseInput, mode: "rapid" | "comprehensive"): string | null {
   if (typeof window === "undefined") return null;
+  if (!draftEnabled()) return null;
   try {
     const savedAt = new Date().toISOString();
     window.localStorage.setItem(DRAFT_KEY, JSON.stringify({ savedAt, mode, data: stripIdentifiers(data) }));
@@ -29,11 +47,15 @@ export function saveDraft(data: CaseInput, mode: "rapid" | "comprehensive"): str
 
 export function loadDraft(): Draft | null {
   if (typeof window === "undefined") return null;
+  if (!draftEnabled()) return null;
   try {
     const raw = window.localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Draft;
-    return parsed?.data && parsed?.savedAt ? parsed : null;
+    if (!parsed?.data || !parsed?.savedAt) return null;
+    // Expire rather than resurrect: a stale draft on a shared workstation is a hazard.
+    if (Date.now() - Date.parse(parsed.savedAt) > DRAFT_TTL_MS) { clearDraft(); return null; }
+    return parsed;
   } catch { return null; }
 }
 
@@ -57,7 +79,7 @@ export type UsabilityMetrics = {
   modeSwitches: number;
   blockingAlerts: number;
   importantAlerts: number;
-  clinicianAgreed: "agreed" | "disagreed" | "not-recorded";
+  clinicianAgreed: "agree" | "partly" | "disagree" | "unable" | "not-recorded";
 };
 
 export function recordMetrics(m: UsabilityMetrics): void {

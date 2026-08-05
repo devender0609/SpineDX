@@ -10,7 +10,15 @@ import type { CaseInput } from "./schema.ts";
  * an unanswered state, so counting them would never reach zero for a patient whose symptom
  * duration is genuinely unknown.
  */
-export type RapidRequirement = { key: string; label: string; step: number; answered: (c: CaseInput) => boolean };
+export type RapidRequirement = {
+  key: string; label: string; step: number;
+  answered: (c: CaseInput) => boolean;
+  /** When present, the requirement only counts if the case makes it relevant. */
+  relevant?: (c: CaseInput, ctx: RapidContext) => boolean;
+};
+/** Optional review contexts the physician opts into for this visit. */
+export type RapidContext = { procedureReview: boolean; managementContext: boolean };
+export const DEFAULT_RAPID_CONTEXT: RapidContext = { procedureReview: false, managementContext: false };
 
 const answered = (v: string) => v !== "not-assessed" && v !== "unknown";
 
@@ -25,18 +33,31 @@ export const RAPID_REQUIREMENTS: RapidRequirement[] = [
   { key: "legDominantPain",          label: "Leg-dominant symptoms",       step: 2, answered: c => answered(c.legDominantPain) },
   { key: "dermatomalPain",           label: "Dermatomal pain",             step: 2, answered: c => answered(c.dermatomalPain) },
   { key: "straightLegRaise",         label: "Straight-leg raise",          step: 2, answered: c => c.straightLegRaise !== "not-tested" },
-  { key: "rapidMotorScreen",         label: "Focal motor deficit",         step: 2, answered: c => answered(c.rapidMotorScreen) },
+  { key: "rapidMotorScreen",         label: "Focal motor deficit",         step: 2, answered: c => answered(c.rapidMotorFinding.status) },
   { key: "imagesReviewed",           label: "Imaging source",              step: 3, answered: c => answered(c.imagesReviewed) },
   { key: "rapidImagingScreen",       label: "Compressive finding",         step: 3, answered: c => answered(c.rapidImagingScreen) },
-  { key: "priorSurgeryType",         label: "Prior lumbar surgery",        step: 4, answered: c => c.priorSurgeryType !== "not-assessed" },
-  { key: "exerciseProgramCompleted", label: "Exercise or physical therapy", step: 4, answered: c => answered(c.exerciseProgramCompleted) },
-  { key: "medicationTrialCompleted", label: "Medication trial",            step: 4, answered: c => answered(c.medicationTrialCompleted) },
-  { key: "injectionResponse",        label: "Injection response",          step: 4, answered: c => c.injectionResponse !== "unknown" },
-  { key: "proposedProcedure",        label: "Pathway being considered",    step: 4, answered: c => c.proposedProcedure !== "not-assessed" },
+  { key: "priorSurgeryType",         label: "Prior lumbar operation",      step: 4, answered: c => c.priorSurgeryType !== "not-assessed" },
+  // --- conditional: only counted when the visit actually includes these reviews ---
+  { key: "exerciseProgramCompleted", label: "Exercise or physical therapy", step: 4,
+    answered: c => answered(c.exerciseProgramCompleted),
+    relevant: (_c, ctx) => ctx.managementContext },
+  { key: "medicationTrialCompleted", label: "Medication trial",            step: 4,
+    answered: c => answered(c.medicationTrialCompleted),
+    relevant: (_c, ctx) => ctx.managementContext },
+  { key: "injectionResponse",        label: "Injection response",          step: 4,
+    answered: c => c.injectionResponse !== "unknown",
+    relevant: (_c, ctx) => ctx.managementContext },
+  { key: "proposedProcedure",        label: "Pathway being considered",    step: 4,
+    answered: c => c.proposedProcedure !== "not-assessed",
+    relevant: (_c, ctx) => ctx.procedureReview },
 ];
 
-export const outstandingRapidRequirements = (c: CaseInput): RapidRequirement[] =>
-  RAPID_REQUIREMENTS.filter(r => !r.answered(c));
+/** Requirements that apply to this case. Irrelevant optional fields are never counted. */
+export const applicableRapidRequirements = (c: CaseInput, ctx: RapidContext = DEFAULT_RAPID_CONTEXT) =>
+  RAPID_REQUIREMENTS.filter(r => !r.relevant || r.relevant(c, ctx));
+
+export const outstandingRapidRequirements = (c: CaseInput, ctx: RapidContext = DEFAULT_RAPID_CONTEXT): RapidRequirement[] =>
+  applicableRapidRequirements(c, ctx).filter(r => !r.answered(c));
 
 /**
  * Case features for which Comprehensive review is the better tool. These are SUGGESTIONS.
@@ -65,3 +86,8 @@ export function comprehensiveSuggestions(c: CaseInput): string[] {
     out.push("more than one potentially relevant level is documented");
   return out;
 }
+
+export const RAPID_REQUIREMENT_COUNT = RAPID_REQUIREMENTS.length;
+/** Base workflow: the decision-critical confirmations every routine case needs. */
+export const BASE_RAPID_REQUIREMENT_COUNT =
+  RAPID_REQUIREMENTS.filter(r => !r.relevant).length;

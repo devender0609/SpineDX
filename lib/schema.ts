@@ -9,6 +9,38 @@ export type Laterality = "right" | "left" | "bilateral" | "midline" | "not-asses
  */
 export type PrimaryRegion = "lumbar" | "cervical" | "thoracic" | "multiple" | "nonspinal-uncertain" | "not-assessed";
 export type ScopeConfirmation = "yes" | "no" | "uncertain" | "not-assessed";
+
+/**
+ * Dedicated Rapid motor observation.
+ *
+ * Rapid review records ONE focused observation. It must never be expanded into graded
+ * Comprehensive muscle fields: a single "L5 weakness" observation is not evidence that both
+ * ankle dorsiflexion and great-toe extension were individually tested, and an observation on
+ * one side says nothing about the other. This structure keeps the focused screen separate
+ * from the bilateral examination so neither can be mistaken for the other.
+ */
+export type TestedMovement =
+  | "knee-extension" | "ankle-dorsiflexion" | "great-toe-extension" | "plantar-flexion"
+  | "heel-walk" | "toe-walk" | "other" | "not-assessed";
+export type RapidMotorReliability =
+  | "objective-reproducible" | "pain-limited" | "effort-limited" | "give-way"
+  | "chronic-baseline" | "uncertain" | "not-assessed";
+export type RapidMotorFinding = {
+  status: ClinicalStatus;
+  side: Laterality;
+  suspectedRoot: "L4" | "L5" | "S1" | "multiroot" | "uncertain" | "not-assessed";
+  testedMovement: TestedMovement;
+  lowestObservedGrade: MotorGrade;
+  reliability: RapidMotorReliability;
+};
+
+/** Clinically distinct scope pathways. These are NOT interchangeable exclusions. */
+export type ScopePathway =
+  | "in-scope"
+  | "serious-pathology"      // infection, malignancy, fracture, CES features, progressive severe deficit
+  | "complex-postop-deformity" // prior long fusion, major deformity, revision anatomy, pseudarthrosis
+  | "outside-localization"   // axial-only, nonspinal, unsupported region
+  | "special-population";    // pregnancy, paediatric age, neuromuscular disease
 export type Root = "L4" | "L5" | "S1";
 export type RootOrNone = Root | "multiroot" | "none" | "not-assessed";
 export type LumbarLevel = "L1-2" | "L2-3" | "L3-4" | "L4-5" | "L5-S1";
@@ -48,6 +80,7 @@ export type CaseInput = {
   studyId: string;
   primaryRegion: PrimaryRegion;
   lumbarScopeConfirmed: ScopeConfirmation;
+  rapidMotorFinding: RapidMotorFinding;
   age: Measurement;
   sexAtBirth: "female" | "male" | "intersex" | "unknown";
   symptomDurationWeeks: Measurement;

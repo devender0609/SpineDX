@@ -25,10 +25,10 @@ const RAPID_VISIBLE_FIELDS = [
   // Syndrome
   "legDominantPain", "dermatomalPain", "straightLegRaise",
   "walkingProvokes", "standingProvokes", "sittingRelieves", "flexionRelieves", "pulsesAbnormal",
-  // Focused motor screen
-  "rapidMotorScreen", "weaknessQuality", "examConfidence",
-  "rightKneeExtension", "leftKneeExtension", "rightAnkleDorsiflexion", "leftAnkleDorsiflexion",
-  "rightGreatToeExtension", "leftGreatToeExtension", "rightPlantarFlexion", "leftPlantarFlexion",
+  // Focused motor screen. The eight Comprehensive muscle grades are deliberately EXCLUDED:
+  // Rapid review records its observation in `rapidMotorFinding` and never grades a myotome,
+  // so a graded muscle present in the stored case can only have come from Comprehensive mode.
+  "rapidMotorScreen", "rapidMotorFinding", "examConfidence",
   // Imaging confirmation
   "imagesReviewed", "imageQuality", "rapidImagingScreen", "levelByLevelDocumented", "imagingMatrix",
   // Treatment context

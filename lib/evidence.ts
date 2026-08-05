@@ -1,4 +1,8 @@
 export type EvidenceStrength = "high" | "moderate" | "limited" | "consensus";
+export type EvidenceDomain =
+  | "safety" | "radiculopathy" | "claudication-stenosis" | "examination" | "imaging"
+  | "injection" | "decompression" | "fusion" | "revision-postoperative" | "optimization"
+  | "outcomes" | "implementation-validation";
 export type StudyType =
   | "society-guideline"
   | "randomized-trial"
@@ -22,6 +26,16 @@ export type EvidenceItem = {
   reviewDate: string;
   /** Level/quality descriptor where a recognised scheme applies. Omitted where none fits. */
   evidenceLevel?: string;
+  /** Clinical domain, for the Evidence tab filters. */
+  domain: EvidenceDomain;
+  /**
+   * Whether the citation, scope and claims of this entry have been checked against the source
+   * document. "unverified" entries are shown with a visible caveat: they were compiled from
+   * working knowledge and have NOT been opened and confirmed. This is a first-class field
+   * because an unverified citation that looks verified is worse than no citation.
+   */
+  verified: "verified" | "unverified";
+  verifiedOn?: string;
   superseded: false | string;
 };
 
@@ -47,6 +61,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     limitations:
       "Guideline predates several later trials; recommendation strength varies by question and is not uniform across the document.",
     reviewDate: "2026-08-03",
+    domain: "radiculopathy",
+    verified: "unverified",
     superseded: false,
   },
   "NASS-LSS": {
@@ -65,6 +81,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     limitations:
       "Consensus-heavy in several domains; limited direct evidence on zone-specific attribution.",
     reviewDate: "2026-08-03",
+    domain: "claudication-stenosis",
+    verified: "unverified",
     superseded: false,
   },
   "ASYMPT-MRI": {
@@ -83,6 +101,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     limitations:
       "Heterogeneous imaging protocols and grading definitions across included studies; prevalence estimates are not individualised.",
     reviewDate: "2026-08-03",
+    domain: "imaging",
+    verified: "unverified",
     superseded: false,
   },
   "SLR-DX": {
@@ -101,6 +121,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     limitations:
       "Spectrum bias across included studies; reference standards varied.",
     reviewDate: "2026-08-03",
+    domain: "examination",
+    verified: "unverified",
     superseded: false,
   },
   "FORAMEN-GRADE": {
@@ -116,6 +138,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     limitations:
       "Agreement is not accuracy. No outcome linkage. Later reviews report heterogeneous symptom correlation.",
     reviewDate: "2026-08-03",
+    domain: "imaging",
+    verified: "unverified",
     superseded: false,
   },
   "SPORT-LDH": {
@@ -135,6 +159,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     limitations:
       "Crossover approached 50%, so intention-to-treat and as-treated estimates diverge substantially. Not applicable to discordant or unlocalised cases.",
     reviewDate: "2026-08-03",
+    domain: "decompression",
+    verified: "unverified",
     superseded: false,
   },
   "SPORT-LSS": {
@@ -149,6 +175,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     applicability: "Applies to symptomatic stenosis where localization is established.",
     limitations: "Crossover limits causal interpretation; population is a surgical referral cohort.",
     reviewDate: "2026-08-03",
+    domain: "decompression",
+    verified: "unverified",
     superseded: false,
   },
   "NORDSTEN-DS": {
@@ -167,6 +195,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     limitations:
       "Non-inferiority design with a prespecified margin; excluded populations are precisely those in whom fusion is most debated.",
     reviewDate: "2026-08-03",
+    domain: "fusion",
+    verified: "unverified",
     superseded: false,
   },
   "SWEDISH-LSS": {
@@ -181,24 +211,53 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     applicability: "Relevant only where fusion is being considered for one- or two-level central stenosis.",
     limitations: "Population-specific; does not address foraminal-driven or revision-driven fusion rationale.",
     reviewDate: "2026-08-03",
+    domain: "fusion",
+    verified: "unverified",
     superseded: false,
   },
-  "CES-CONSENSUS": {
-    id: "CES-CONSENSUS",
+  "NICE-NG59-REDFLAGS": {
+    id: "NICE-NG59-REDFLAGS",
     citation:
-      "Multidisciplinary consensus and national standards on suspected cauda equina syndrome pathways (composite consensus entry).",
+      "NICE guideline NG59. Low back pain and sciatica in over 16s: assessment and management. Published 30 November 2016, last updated 11 December 2020.",
     url: "https://www.nice.org.uk/guidance/ng59",
-    studyType: "expert-consensus",
-    population: "Adults presenting with possible cauda equina syndrome.",
+    studyType: "society-guideline",
+    population: "People aged over 16 with low back pain and sciatica, across NHS care settings.",
     mainFinding:
-      "Suspected cauda equina syndrome requires immediate escalation on clinical suspicion; no screening question set safely excludes it.",
+      "Sets out the warning features that should be asked about in every presentation: difficulty passing urine, loss of sensation on passing urine, faecal incontinence, saddle anaesthesia, and bilateral severe sciatica or progressive motor weakness.",
     keyExclusions:
-      "Consensus rather than a diagnostic-accuracy study. No validated rule-out instrument exists.",
+      "The guideline explicitly does NOT cover the evaluation or management of sciatica with progressive neurological deficit or cauda equina syndrome, nor people under 16, nor adolescent scoliosis. It states that clinicians should recognise these emergencies and refer, not that it tells them how to manage them.",
     applicability:
-      "Supports escalation on a positive screen and supports refusing to state that emergency pathology has been excluded.",
+      "Supports the CONTENT of the safety screen only — which features to ask about. It does not support any statement about excluding cauda equina syndrome, and it is not a cauda equina management guideline.",
     limitations:
-      "Consensus-level evidence only. This is a completeness and escalation rule, not a high-level clinical effectiveness finding.",
-    reviewDate: "2026-08-03",
+      "A general low back pain and sciatica guideline. Using it as authority for cauda equina diagnosis or management would misrepresent its stated scope.",
+    reviewDate: "2026-08-04",
+    domain: "safety",
+    evidenceLevel: "National guideline (NICE)",
+    verified: "verified",
+    verifiedOn: "2026-08-04",
+    superseded: false,
+  },
+  "GIRFT-CES-PATHWAY": {
+    id: "GIRFT-CES-PATHWAY",
+    citation:
+      "NHS England Getting It Right First Time (GIRFT) national pathway for cauda equina syndrome, published as an interactive care pathway alongside NICE NG59.",
+    url: "https://www.nice.org.uk/guidance/ng59/resources/interactive-care-pathway-for-cauda-equina-syndrome-15370315021",
+    studyType: "expert-consensus",
+    population:
+      "Patients with suspected cauda equina syndrome in primary, community and secondary care.",
+    mainFinding:
+      "Provides a national decision-support pathway covering symptoms and initial management, bladder scanning, radiology, surgery and post-operative care, with escalation on clinical suspicion.",
+    keyExclusions:
+      "A service-delivery and decision-support pathway, not a diagnostic-accuracy study. No validated instrument exists that safely rules out cauda equina syndrome.",
+    applicability:
+      "Supports escalating on a positive screen, and supports this framework's refusal to state that emergency pathology has been excluded.",
+    limitations:
+      "Consensus and benchmarking derived rather than trial evidence. An escalation and completeness rule, not a clinical effectiveness finding. UK service context may not transfer directly.",
+    reviewDate: "2026-08-04",
+    domain: "safety",
+    evidenceLevel: "National pathway / consensus",
+    verified: "verified",
+    verifiedOn: "2026-08-04",
     superseded: false,
   },
   "ACR-LBP": {
@@ -213,6 +272,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     applicability: "Supports the serious-pathology screening domain and imaging-adequacy prompts.",
     limitations: "Appropriateness ratings are consensus-informed and are not outcome evidence.",
     reviewDate: "2026-08-03",
+    domain: "imaging",
+    verified: "unverified",
     superseded: false,
   },
   "ODI-PSYCH": {
@@ -227,6 +288,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     limitations:
       "A single universal MCID across diagnoses, instruments and time points is not supported by the literature.",
     reviewDate: "2026-08-03",
+    domain: "outcomes",
+    verified: "unverified",
     superseded: false,
   },
   "PROMIS-VALID": {
@@ -240,6 +303,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     applicability: "Supports optional baseline and longitudinal outcome capture only.",
     limitations: "T-score interpretation is population-referenced; MCID estimates vary across studies.",
     reviewDate: "2026-08-03",
+    domain: "outcomes",
+    verified: "unverified",
     superseded: false,
   },
   "CROSSED-SLR": {
@@ -257,6 +322,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     limitations: "Few primary studies; reference standards and thresholds vary.",
     reviewDate: "2026-08-04",
     evidenceLevel: "Moderate certainty",
+    domain: "examination",
+    verified: "unverified",
     superseded: false,
   },
   "MOTOR-REFLEX-DX": {
@@ -276,6 +343,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
       "Inter-examiner reliability of manual motor grading and reflex assessment is itself imperfect and is not captured by accuracy estimates.",
     reviewDate: "2026-08-04",
     evidenceLevel: "Moderate certainty",
+    domain: "examination",
+    verified: "unverified",
     superseded: false,
   },
   "ESI-EVIDENCE": {
@@ -295,6 +364,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
       "Heterogeneous technique, target selection, steroid and volume. A response does not distinguish the injected level from adjacent levels because injectate spreads, so response alone cannot establish the symptomatic level.",
     reviewDate: "2026-08-04",
     evidenceLevel: "Moderate certainty for short-term benefit; low for durability",
+    domain: "injection",
+    verified: "unverified",
     superseded: false,
   },
   "SNRB-DX": {
@@ -313,6 +384,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
       "No accepted reference standard for the symptomatic level, so accuracy estimates are circular to a degree.",
     reviewDate: "2026-08-04",
     evidenceLevel: "Low to moderate certainty",
+    domain: "injection",
+    verified: "unverified",
     superseded: false,
   },
   "SMOKING-FUSION": {
@@ -331,6 +404,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
       "Confounding by indication and by socioeconomic factors is not fully addressed. Effect sizes vary widely across studies.",
     reviewDate: "2026-08-04",
     evidenceLevel: "Low to moderate certainty (observational)",
+    domain: "optimization",
+    verified: "unverified",
     superseded: false,
   },
   "GLYCEMIC-SSI": {
@@ -349,6 +424,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
       "No single validated HbA1c threshold for proceeding or deferring. Local pathway governs.",
     reviewDate: "2026-08-04",
     evidenceLevel: "Low to moderate certainty (observational)",
+    domain: "optimization",
+    verified: "unverified",
     superseded: false,
   },
   "BONE-INSTRUMENT": {
@@ -367,6 +444,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
       "DEXA underestimates deficiency in degenerative lumbar spines because of osteophytes and sclerosis; opportunistic CT may reclassify patients.",
     reviewDate: "2026-08-04",
     evidenceLevel: "Low to moderate certainty (observational)",
+    domain: "optimization",
+    verified: "unverified",
     superseded: false,
   },
   "OPIOID-OUTCOME": {
@@ -385,6 +464,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
       "Strong confounding by pain severity and psychosocial factors; association is not causal.",
     reviewDate: "2026-08-04",
     evidenceLevel: "Low certainty (observational)",
+    domain: "optimization",
+    verified: "unverified",
     superseded: false,
   },
   "REVISION-DISEASE": {
@@ -403,6 +484,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
       "Indication heterogeneity limits transfer to any individual revision case.",
     reviewDate: "2026-08-04",
     evidenceLevel: "Low to moderate certainty (observational)",
+    domain: "revision-postoperative",
+    verified: "unverified",
     superseded: false,
   },
   "SHARED-DECISION": {
@@ -421,6 +504,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
       "Does not establish that any particular decision-support format improves clinical outcomes.",
     reviewDate: "2026-08-04",
     evidenceLevel: "Moderate certainty for decisional outcomes",
+    domain: "implementation-validation",
+    verified: "unverified",
     superseded: false,
   },
   "TRIPOD-AI": {
@@ -436,6 +521,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
       "Applies to the framework's own validation status; cited only for statements about the tool, never about a patient.",
     limitations: "Does not itself establish that any specific rule in this app is valid.",
     reviewDate: "2026-08-03",
+    domain: "implementation-validation",
+    verified: "unverified",
     superseded: false,
   },
   "DECIDE-AI": {
@@ -450,6 +537,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     applicability: "Applies to the framework's evaluation status; never cited as patient-level evidence.",
     limitations: "Does not establish clinical validity of any rule.",
     reviewDate: "2026-08-03",
+    domain: "implementation-validation",
+    verified: "unverified",
     superseded: false,
   },
 };

@@ -124,6 +124,18 @@ function syndrome(i:CaseInput){
   return { clinicianEntered:i.clinicianPhenotype, derived, rationale, conflicts };
 }
 
+/** Grade recorded by the focused Rapid screen, if any. Kept entirely separate from the
+ *  bilateral Comprehensive examination — it is one observation, not a graded myotome set. */
+const rapidMotorGrade=(i:CaseInput):number|null=>
+  i.rapidMotorFinding.status==="present"?grade(i.rapidMotorFinding.lowestObservedGrade):null;
+
+/** Rapid reliability maps onto the shared reliability scale without inventing confidence. */
+const rapidReliability=(r:CaseInput["rapidMotorFinding"]["reliability"]):"high"|"moderate"|"low"|"indeterminate"=>
+  r==="objective-reproducible"?"high"
+  :r==="chronic-baseline"?"moderate"
+  :r==="pain-limited"||r==="effort-limited"||r==="give-way"?"low"
+  :"indeterminate";
+
 function neurologic(i:CaseInput){
   const tested=[i.rightKneeExtension,i.leftKneeExtension,i.rightAnkleDorsiflexion,i.leftAnkleDorsiflexion,i.rightGreatToeExtension,i.leftGreatToeExtension,i.rightPlantarFlexion,i.leftPlantarFlexion].map(grade).filter((x):x is number=>x!==null);
   const rationale:string[]=[];
@@ -131,6 +143,14 @@ function neurologic(i:CaseInput){
   const statedReliability: DecisionOutput["neurologic"]["reliability"] = i.examConfidence==="not-assessed"?"indeterminate":i.examConfidence;
   const otherDomainsUntested=i.rightSensoryRoot==="not-tested"&&i.leftSensoryRoot==="not-tested"&&i.rightPatellarReflex==="not-tested"&&i.leftPatellarReflex==="not-tested"&&i.rightAchillesReflex==="not-tested"&&i.leftAchillesReflex==="not-tested";
   if(!tested.length&&otherDomainsUntested){
+    const rg=rapidMotorGrade(i);
+    if(rg!==null){
+      const f=i.rapidMotorFinding;
+      const sev=rg<=3?"severe":rg<5?"moderate":"none";
+      return {severity:sev as DecisionOutput["neurologic"]["severity"],reliability:rapidReliability(f.reliability),
+        rationale:[`Focused motor screen: ${f.side==="not-assessed"?"side not documented":f.side} ${f.testedMovement==="not-assessed"?"movement not documented":f.testedMovement.replaceAll("-"," ")} at ${f.lowestObservedGrade}/5.`,
+          "This is a focused screen of one movement, not a full bilateral examination. Other myotomes were not graded and the contralateral limb was not assessed."]};
+    }
     if(i.rapidMotorScreen==="absent") return {severity:"none" as const,reliability:statedReliability,rationale:["No focal motor deficit was identified in the rapid screen. Individual myotomes were not graded and a complete neurologic examination was not recorded."]};
     return {severity:"indeterminate" as const,reliability:"indeterminate" as const,rationale:["Neurologic examination is not sufficiently completed."]};
   }
@@ -296,6 +316,11 @@ export function evaluateCase(i:CaseInput):DecisionOutput{
   for(const level of i.proposedLevels) if(!assessedImagingLevels.includes(level)) contradictions.push(`The proposed pathway includes ${level}, but no potentially relevant ${level} imaging abnormality is documented.`);
   if(i.injectionResponse!=="not-tried"&&i.injectionResponse!=="unknown"&&i.injectionLevel!=="unknown"&&i.injectionLevel!=="not-applicable"&&!assessedImagingLevels.includes(i.injectionLevel)) contradictions.push(`The recorded injection targeted ${i.injectionLevel}, but no potentially relevant finding is documented at that level.`);
   if(i.injectionResponse!=="not-tried"&&i.injectionResponse!=="unknown"&&i.injectionSide!=="not-assessed"&&i.side!=="not-assessed"&&i.side!=="bilateral"&&i.injectionSide!=="bilateral"&&i.injectionSide!=="midline"&&i.injectionSide!==i.side) contradictions.push(`The injection was ${i.injectionSide}-sided, while the primary symptoms are ${i.side}-sided.`);
+  // Clinician impression is compared against the derived candidate, never fed into it.
+  // Keeping it out of the derivation is what makes the comparison meaningful rather than circular.
+  if(i.clinicianSuspectedRoot!=="not-assessed"&&top&&top.root!=="multiroot"&&i.clinicianSuspectedRoot!==top.root){
+    contradictions.push(`The clinician's suspected root (${i.clinicianSuspectedRoot}) differs from the most concordant derived candidate (${top.root}). This is recorded for comparison; it is not resolved by the framework.`);
+  }
   missing.push(...contradictions);
   if(i.imagesReviewed!=="present") missing.push("Direct image review is not documented.");
   // A negative rapid screen is a RESULT, not missing information. It belongs in scope notes so
@@ -355,10 +380,10 @@ export function evaluateCase(i:CaseInput):DecisionOutput{
   // Evidence must match the conclusion that actually fired. A completeness/escalation rule cites
   // consensus sources; a disease-attribution rule cites disease literature; a missing-data
   // conclusion cites nothing, because no clinical trial speaks to absent documentation.
-  const safetyEvidence:string[]=sf.urgency==="emergency"?["CES-CONSENSUS"]
-    :sf.urgency==="urgent"?["CES-CONSENSUS","ACR-LBP"]
-    :sf.urgency==="indeterminate"?["CES-CONSENSUS"]
-    :["CES-CONSENSUS"];
+  // The escalation pathway and the screen CONTENT are different sources and are cited as such.
+  const safetyEvidence:string[]=sf.urgency==="emergency"?["GIRFT-CES-PATHWAY"]
+    :sf.urgency==="urgent"?["GIRFT-CES-PATHWAY","ACR-LBP"]
+    :["NICE-NG59-REDFLAGS","GIRFT-CES-PATHWAY"];
   const syndromeEvidence:string[]=sy.derived==="indeterminate"||sy.derived==="not-supported"?[]
     :sy.derived.includes("claudication")?["NASS-LSS"]
     :sy.derived==="mixed"?["NASS-LDH","NASS-LSS"]

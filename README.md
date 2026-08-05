@@ -1,6 +1,6 @@
-# SpineDx-Tx v28.4
+# SpineDx-Tx v29.0
 
-Package version `0.28.4` · application version `28.4.0` · ruleset `LUMBAR-RULESET-1.9.0`
+Package version `0.29.0` · application version `29.0.0` · ruleset `LUMBAR-RULESET-2.0.0`
 
 A clinician-facing lumbar/lumbosacral clinical–imaging reconciliation prototype.
 
@@ -32,10 +32,16 @@ withholds lumbar localization, decompression, fusion and treatment synthesis.
 
 ## Two modes
 
-**Rapid review** — 18 mandatory confirmations covering safety screening, basic syndrome
-classification, major discordance detection and preliminary localization. A live counter shows
-how many confirmations remain. Output is labelled a *preliminary rapid synthesis* and states
-that it is not a complete neurologic or multilevel imaging assessment.
+**Rapid review** — **14 mandatory confirmations** for a routine case, 18 at most once optional
+branches are opened. Covers safety screening, basic syndrome classification, major discordance
+detection and preliminary localization. A live counter shows how many remain; optional fields
+are never counted. Output is labelled a *preliminary rapid synthesis* and states that it is not
+a complete neurologic or multilevel imaging assessment.
+
+The Rapid motor screen records **one movement on one side** in a dedicated structure. It never
+writes graded Comprehensive muscle values: a single "L5 weakness" observation is not evidence
+that ankle dorsiflexion and great-toe extension were each tested, and one side says nothing
+about the other.
 
 **Comprehensive review** — full bilateral neurologic examination, multilevel imaging matrix,
 level-specific fusion rationale, perioperative optimization, ODI and PROMIS, and the research
@@ -51,9 +57,21 @@ or more than one relevant level.
 
 ## Drafts
 
-Work is autosaved to browser local storage so a long Comprehensive assessment survives a
-refresh. Free-text fields are stripped before saving. This is prototype storage: it is not
-authenticated and makes no compliance claim.
+Draft storage is **off until you opt in** on that browser, with a session-only alternative.
+When enabled, free-text and identifier-capable fields are stripped before writing, drafts
+expire after 24 hours, storage status and last-save time are always visible, and a saved draft
+is never restored without pressing Resume. Adjudication data and research notes are never
+written to a draft.
+
+Prototype browser storage. Not approved for PHI or shared clinical workstations.
+
+## Research export
+
+Two explicit options behind a pre-export review that lists the identifying fields currently
+holding data. The **structured de-identified export** actually removes study ID, patient goal,
+case ID, site code, reviewer IDs, rationale, disagreement reason and notes, and omits the
+unfiltered form state entirely. The **full export** requires confirmation and is labelled as
+possibly containing identifiers. Nothing is labelled de-identified unless the code stripped it.
 
 ## Running
 
@@ -62,17 +80,23 @@ npm install
 npm run test        # engine + regression suites
 npm run typecheck
 npm run build
+npm run test:visual # requires a running server; see scripts/verify.sh
 ```
 
-`bash scripts/verify.sh` runs the full chain and stops at the first failure.
+`bash scripts/verify.sh` runs the full chain — typecheck, engine tests, regression tests,
+production build, then visual checks at 1440 / 1024 / 768 / 390 against a real server — and
+stops at the first failure. Set `SKIP_VISUAL=1` where no browser is available; it is skipped
+loudly, never silently passed.
 
-On Windows, run `install-v28.4.ps1` from the extracted source folder. It verifies version
+On Windows, run `install-v29.0.ps1` from the extracted source folder. It verifies version
 agreement, syncs the repository, copies the source, then runs install, engine tests,
 regression tests, typecheck and the production build, checking `$LASTEXITCODE` after each.
 It cannot print success after a failure.
 
 ## Documentation
 
-- `docs/V28_4_RELEASE_AUDIT.md` — current release audit and issue table
+- `docs/V29_0_RELEASE_AUDIT.md` — current release audit and issue table
+- `docs/screenshots/` — verified captures at 1440 / 1024 / 768 / 390
+- `docs/V28_4_RELEASE_AUDIT.md` — prior release audit
 - `docs/V28_3_CLINICAL_SAFETY_AUDIT.md` — prior clinical-safety audit
 - `docs/current/` — validation protocol, data dictionary, evidence registry, intended use
