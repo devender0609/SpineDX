@@ -4,7 +4,7 @@ import { createBlankCase, createDemoCase } from "../lib/caseFactory.ts";
 import { evaluateCase } from "../lib/decisionEngine.ts";
 import { validateCaseInput } from "../lib/validation.ts";
 import { projectForMode, suppressedFields } from "../lib/modeProjection.ts";
-import { EVIDENCE_REGISTRY, getEvidenceList, FRAMEWORK_ONLY_EVIDENCE } from "../lib/evidence.ts";
+import { EVIDENCE_REGISTRY, getEvidenceList, FRAMEWORK_ONLY_EVIDENCE, EVIDENCE_DOMAIN_LABELS } from "../lib/evidence.ts";
 import { RAPID_REQUIREMENTS, outstandingRapidRequirements, comprehensiveSuggestions, applicableRapidRequirements, BASE_RAPID_REQUIREMENT_COUNT, DEFAULT_RAPID_CONTEXT } from "../lib/rapidRequirements.ts";
 import { buildPriorityAlerts } from "../lib/priorityAlerts.ts";
 import { stripIdentifiers, DRAFT_STORAGE_KEY } from "../lib/draftStorage.ts";
@@ -428,7 +428,8 @@ test("a scope exclusion actually withholds treatment output", () => {
   c.knownTumor = "present";
   const r = evaluateCase(c);
   assert.equal(r.applicability.treatment, "out-of-scope");
-  assert.ok(r.applicability.reasons.includes("known tumor"));
+  assert.ok(r.applicability.reasons.some(x => /tumour|tumor/i.test(x)));
+  assert.equal(r.applicability.pathway.primary, "serious-pathology");
   assert.equal(r.specialistReview.status, "additional-assessment");
 });
 
@@ -500,22 +501,22 @@ test("package, application and installer versions agree", () => {
   const pkg = JSON.parse(readFileSync("package.json", "utf8"));
   const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
   const appVersion = readFileSync("lib/appVersion.ts", "utf8");
-  const installer = readFileSync("install-v29.0.ps1", "utf8");
-  assert.equal(pkg.version, "0.29.0", "package.json version");
-  assert.equal(lock.version, "0.29.0", "package-lock.json version");
-  assert.ok(appVersion.includes('APP_VERSION = "29.0.0"'), "APP_VERSION");
-  assert.ok(installer.includes('$packageVersion   = "0.29.0"'), "installer package version");
-  assert.ok(installer.includes('$appVersion       = "29.0.0"'), "installer app version");
-  assert.ok(installer.includes('$release          = "v29.0"'), "installer release");
+  const installer = readFileSync("install-v29.1.ps1", "utf8");
+  assert.equal(pkg.version, "0.29.1", "package.json version");
+  assert.equal(lock.version, "0.29.1", "package-lock.json version");
+  assert.ok(appVersion.includes('APP_VERSION = "29.1.0"'), "APP_VERSION");
+  assert.ok(installer.includes('$packageVersion   = "0.29.1"'), "installer package version");
+  assert.ok(installer.includes('$appVersion       = "29.1.0"'), "installer app version");
+  assert.ok(installer.includes('$release          = "v29.1"'), "installer release");
 });
 
 test("no stale version strings remain in release-facing files", () => {
-  for (const f of ["README.md", "install-v29.0.ps1", "package.json", "package-lock.json",
+  for (const f of ["README.md", "install-v29.1.ps1", "package.json", "package-lock.json",
                    "lib/appVersion.ts", "scripts/engine-tests.mjs", "scripts/verify.sh"]) {
     const text = readFileSync(f, "utf8");
     // the installer legitimately deletes older installers by name; ignore those lines
-    const lines = text.split("\n").filter(l => !/Remove-Item.*install-v28\.[234]\.ps1/.test(l));
-    for (const stale of ["v28.2","v28.3","v28.4","0.28.2","0.28.3","0.28.4","28.2.0","28.3.0","28.4.0"]) {
+    const lines = text.split("\n").filter(l => !/Remove-Item.*install-v(28\.[234]|29\.0)\.ps1/.test(l));
+    for (const stale of ["v28.2","v28.3","v28.4","v29.0","0.28.2","0.28.3","0.28.4","0.29.0","28.2.0","28.3.0","28.4.0","29.0.0"]) {
       const hit = lines.find(l => l.includes(stale));
       assert.ok(!hit, `${f} still references ${stale}: ${hit}`);
     }
@@ -525,11 +526,11 @@ test("no stale version strings remain in release-facing files", () => {
 test("the old installer is gone and the new one exists", () => {
   assert.ok(!existsSync("install-v28.2.ps1"));
   assert.ok(!existsSync("install-v28.3.ps1"));
-  assert.ok(existsSync("install-v29.0.ps1"));
+  assert.ok(existsSync("install-v29.1.ps1"));
 });
 
 test("the installer runs the full verification chain with exit-code checks", () => {
-  const ps = readFileSync("install-v29.0.ps1", "utf8");
+  const ps = readFileSync("install-v29.1.ps1", "utf8");
   for (const cmd of ["npm install", "npm run test:engine", "npm run test:regression",
                      "npm run typecheck", "npm run build"]) {
     assert.ok(ps.includes(cmd), `installer must run "${cmd}"`);
@@ -706,9 +707,10 @@ test("the expanded registry keeps full metadata on every entry", () => {
 });
 
 test("the library is labelled curated, never comprehensive", () => {
-  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
-  assert.ok(/[Cc]urated/.test(ui));
-  assert.ok(!/comprehensive evidence library|exhaustive evidence/i.test(ui));
+  const lib = readFileSync("components/evidence/EvidenceLibrary.tsx", "utf8");
+  assert.ok(lib.includes("Curated evidence supporting the current framework"));
+  assert.ok(/not comprehensive/i.test(lib));
+  assert.ok(!/comprehensive evidence library|exhaustive evidence/i.test(lib));
 });
 
 console.log("\n-- v28.4: draft storage and instrumentation --");
@@ -862,24 +864,27 @@ test("the UI never writes comprehensive muscle fields from the rapid screen", ()
 
 console.log("\n-- v29.0: research export privacy --");
 
-test("the de-identified export actually strips every designated field", () => {
+test("the identifier-reduced export actually strips every designated field", () => {
   const c = clearSafety(createDemoCase());
   c.studyId = "MRN-9911"; c.patientGoal = "Jane Doe, walk to church";
   const adj = createBlankAdjudication();
   adj.caseId = "CASE-7"; adj.siteCode = "SITE-A";
   adj.firstReviewer = { ...adj.firstReviewer, reviewerId: "DR-SMITH", rationale: "free text here",
     disagreementReason: "reason text", notes: "note text" };
-  const payload = buildExport({ mode: "deidentified", snapshot: c, fullCase: c, result: evaluateCase(c),
+  const payload = buildExport({ mode: "identifier-reduced", snapshot: c, fullCase: c, result: evaluateCase(c),
     issues: [], adjudication: adj, workflowMode: "comprehensive", suppressed: [],
     appVersion: "29.0.0", rulesetVersion: "r", exportSchemaVersion: "s" });
   const text = JSON.stringify(payload);
   for (const secret of ["MRN-9911","Jane Doe","CASE-7","SITE-A","DR-SMITH",
                         "free text here","reason text","note text"]) {
-    assert.ok(!text.includes(secret), `de-identified export leaked "${secret}"`);
+    assert.ok(!text.includes(secret), `identifier-reduced export leaked "${secret}"`);
   }
-  assert.equal(payload.deidentified, true);
+  assert.equal(payload.identifierReduced, true);
+  assert.equal(payload.formallyDeidentified, false,
+    "removing listed fields is not formal de-identification and must not be claimed as such");
+  assert.ok(/not formal de-identification/i.test(payload.residualRisk));
   assert.equal(payload.fullEnteredCase, undefined,
-    "the unfiltered form state must not ride along in a de-identified export");
+    "the unfiltered form state must not ride along in an identifier-reduced export");
   assert.ok(payload.removedFields.length > 0, "removals must be itemised");
 });
 
@@ -888,7 +893,7 @@ test("the full export is labelled not de-identified and carries the warning", ()
   const payload = buildExport({ mode: "full", snapshot: c, fullCase: c, result: null, issues: [],
     adjudication: createBlankAdjudication(), workflowMode: "rapid", suppressed: [],
     appVersion: "29.0.0", rulesetVersion: "r", exportSchemaVersion: "s" });
-  assert.equal(payload.deidentified, false);
+  assert.equal(payload.identifierReduced, false);
   assert.equal(payload.exportMode, "full");
   assert.ok(FULL_EXPORT_WARNING.includes("approved secure research environment"));
   const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
@@ -896,11 +901,33 @@ test("the full export is labelled not de-identified and carries the warning", ()
   assert.ok(ui.includes("window.confirm"), "the full export needs explicit confirmation");
 });
 
-test("the export control is no longer labelled de-identified", () => {
+test("no export is described as de-identified", () => {
   const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  const lib = readFileSync("lib/researchExport.ts", "utf8");
   assert.ok(ui.includes("Export research record for secure review"));
-  assert.ok(!ui.includes("Download de-identified research record"),
-    "an export that ships the full case must not be called de-identified");
+  assert.ok(ui.includes("Identifier-reduced research export"));
+  for (const src of [ui, lib]) {
+    assert.ok(!/de-identified export|Download de-identified|deidentified: true/i.test(src),
+      "removing listed fields is not formal de-identification");
+  }
+});
+
+test("the identifier-reduced export converts exact dates to relative intervals", () => {
+  const c = clearSafety(createDemoCase());
+  c.priorSurgeryDate = "2019-04-17";
+  const payload = buildExport({ mode: "identifier-reduced", snapshot: c, fullCase: c, result: null,
+    issues: [], adjudication: createBlankAdjudication(), workflowMode: "comprehensive",
+    suppressed: [], appVersion: "a", rulesetVersion: "r", exportSchemaVersion: "s" });
+  const text = JSON.stringify(payload);
+  assert.ok(!text.includes("2019-04-17"), "an exact date must not be exported verbatim");
+  assert.ok(/months before export/.test(payload.assessment.priorSurgeryDate));
+});
+
+test("the export modal states included, removed, transformed and residual risk", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  for (const label of ["Removed:", "Transformed:", "Included:", "Residual risk:"]) {
+    assert.ok(ui.includes(label), `export review must state "${label}"`);
+  }
 });
 
 test("the review modal lists exactly what the de-identified export removes", () => {
@@ -914,14 +941,35 @@ test("the review modal lists exactly what the de-identified export removes", () 
 
 console.log("\n-- v29.0: draft storage --");
 
+test("draft storage offers three explicit modes backed by different stores", () => {
+  const src = readFileSync("lib/draftStorage.ts", "utf8");
+  assert.ok(src.includes('export type DraftMode = "off" | "session" | "local"'));
+  assert.ok(src.includes("sessionStorage"), "session-only mode must actually use sessionStorage");
+  assert.ok(/mode === "session" \? window\.sessionStorage : window\.localStorage/.test(src));
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  for (const opt of ["Do not save", "This session only", "Local draft, 24 hours"]) {
+    assert.ok(ui.includes(opt), `draft option "${opt}" missing`);
+  }
+});
+
+test("switching draft modes does not leave a copy in the other store", () => {
+  const src = readFileSync("lib/draftStorage.ts", "utf8");
+  assert.ok(/\(mode === "local" \? window\.sessionStorage : window\.localStorage\)\.removeItem/.test(src));
+});
+
+test("session drafts are not subject to the 24-hour timer", () => {
+  const src = readFileSync("lib/draftStorage.ts", "utf8");
+  assert.ok(/dm === "local" && Date\.now\(\)/.test(src),
+    "expiry applies to local drafts; the browser clears session storage itself");
+});
+
 test("draft storage is off until explicitly enabled", () => {
   const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
-  assert.ok(ui.includes("Save an anonymous local draft on this browser?"));
-  assert.ok(ui.includes("Session only"), "a session-only alternative must be offered");
+  assert.ok(ui.includes("Save your work in this browser?"));
   const src = readFileSync("lib/draftStorage.ts", "utf8");
-  assert.ok(/export function saveDraft[\s\S]{0,200}if \(!draftEnabled\(\)\) return null;/.test(src),
-    "saveDraft must refuse to write without opt-in");
-  assert.ok(/export function loadDraft[\s\S]{0,200}if \(!draftEnabled\(\)\) return null;/.test(src));
+  assert.ok(/export function saveDraft[\s\S]{0,200}const s = store\(draftMode\(\)\);[\s\S]{0,60}if \(!s\) return null;/.test(src),
+    "saveDraft must refuse to write when mode is off");
+  assert.ok(/export function loadDraft[\s\S]{0,240}if \(!s\) return null;/.test(src));
 });
 
 test("drafts expire", () => {
@@ -960,7 +1008,63 @@ test("clinician agreement is asked, not assumed", () => {
   for (const opt of ["Agree", "Partly agree", "Disagree", "Unable to assess"]) {
     assert.ok(ui.includes(opt), `feedback option "${opt}" missing`);
   }
-  assert.ok(ui.includes('clinicianAgreed:k'), "the recorded value must come from the clinician");
+  assert.ok(ui.includes("...feedback"), "the recorded values must come from the clinician");
+  assert.ok(ui.includes("FEEDBACK_QUESTIONS"));
+});
+
+test("feedback covers all three product goals plus impact", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  for (const label of ["Clinical agreement", "Effect on time", "Clinical usefulness",
+                       "Handoff usefulness", "Did it change your assessment?"]) {
+    assert.ok(ui.includes(label), `feedback question "${label}" missing`);
+  }
+  for (const opt of ["Saved time", "Added time", "Identified a useful issue",
+                     "Produced an irrelevant alert", "Changed urgency", "Changed localization"]) {
+    assert.ok(ui.includes(opt), `feedback option "${opt}" missing`);
+  }
+});
+
+test("metrics stay categorical with no clinical values or free text", () => {
+  const src = readFileSync("lib/draftStorage.ts", "utf8");
+  const block = src.split("export type UsabilityMetrics")[1].split("};")[0];
+  for (const f of ["patientGoal","studyId","imagingMatrix","proposedLevels","hba1c","notes","rationale"]) {
+    assert.ok(!block.includes(f), `metrics must not carry ${f}`);
+  }
+  assert.ok(block.includes("elapsedSeconds") && block.includes("fieldEdits"));
+});
+
+console.log("\n-- v29.1: factor-based fusion adjudication --");
+
+test("reviewers document prespecified factors, not an undefined 'established' category", () => {
+  const schema = readFileSync("lib/schema.ts", "utf8");
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(!schema.includes('fusionRationale: "established"'),
+    "the undefined 'established' category must be gone");
+  assert.ok(!/options=\{\["not-entered","established","possible"/.test(ui));
+  for (const f of ["dynamic-instability","pseudarthrosis","revision-destabilization",
+                   "relevant-deformity","foraminal-height-restoration",
+                   "anticipated-destabilizing-decompression",
+                   "hardware-failure-or-postoperative-structural","other-prespecified",
+                   "insufficient-information"]) {
+    assert.ok(schema.includes(f), `fusion factor "${f}" missing from the schema`);
+  }
+});
+
+test("the factor question is separate from the yes/no/unable judgment", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(ui.includes("Are one or more independent fusion-rationale factors documented?"));
+  assert.ok(ui.includes('options={["not-entered","yes","no","unable-to-assess"]'));
+  assert.ok(/not a treatment recommendation/i.test(ui));
+});
+
+test("review context and blinding fields are captured", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  for (const label of ["Reviewer specialty","Images directly reviewed?","Reviewer saw app output?",
+                       "Reviewer saw outcomes?","Confidence: syndrome","Confidence: localization",
+                       "Confidence: fusion rationale","Was the available information sufficient?"]) {
+    assert.ok(ui.includes(label), `review-context field "${label}" missing`);
+  }
+  assert.ok(/blind to app output/i.test(ui), "blinding requirement must be stated to the reviewer");
 });
 
 console.log("\n-- v29.0: evidence integrity --");
@@ -1055,8 +1159,8 @@ test("no major CSS selector is declared twice outside a media query", () => {
 });
 
 test("verified breakpoint screenshots are present in the package", () => {
-  for (const bp of ["desktop-1440","tablet-landscape-1024","tablet-portrait-768","mobile-390"]) {
-    assert.ok(existsSync(`docs/screenshots/${bp}-entry.png`), `missing capture for ${bp}`);
+  for (const bp of ["desktop-1440","tablet-1024","tablet-768","mobile-390"]) {
+    assert.ok(existsSync(`docs/screenshots/${bp}-01-default-empty.png`), `missing capture for ${bp}`);
   }
 });
 
@@ -1065,6 +1169,184 @@ test("the verification chain includes visual checks and cannot pass them silentl
   assert.ok(sh.includes("test:visual"));
   assert.ok(sh.includes('fail "visual checks"'));
   assert.ok(sh.includes("SKIP_VISUAL"), "skipping must be explicit");
+});
+
+
+console.log("\n-- v29.1: clinically distinct pathways --");
+
+test("serious pathology is an urgent diagnostic pathway, not a generic exclusion", () => {
+  const c = clearSafety(createDemoCase());
+  c.feverOrSystemicInfection = "present";
+  const r = evaluateCase(c);
+  assert.equal(r.applicability.pathway.primary, "serious-pathology");
+  assert.equal(r.applicability.treatment, "out-of-scope");
+  assert.ok(r.nextSteps.some(x => /[Uu]rgent evaluation/.test(x)),
+    "the next action must be escalation, not merely 'outside scope'");
+  assert.ok(!r.applicability.reasons.some(x => /outside the current lumbar module/i.test(x)));
+});
+
+test("complex postoperative recommends comprehensive without generic exclusion wording", () => {
+  const c = clearSafety(createDemoCase());
+  c.priorLongFusion = "present";
+  const r = evaluateCase(c);
+  assert.equal(r.applicability.pathway.primary, "complex-postoperative");
+  assert.ok(r.applicability.pathway.recommendsComprehensive);
+  assert.ok(r.applicability.reasons.some(x => /prior long fusion/i.test(x)));
+  assert.ok(r.nextSteps.some(x => /Comprehensive review/i.test(x)));
+  assert.notEqual(r.applicability.treatment, "out-of-scope",
+    "a complex postoperative case is not blocked, it is escalated to the right tool");
+});
+
+test("outside-localization explains what the module can and cannot assess", () => {
+  const c = clearSafety(createDemoCase());
+  c.lumbarScopeConfirmed = "no";
+  const r = evaluateCase(c);
+  assert.equal(r.applicability.pathway.primary, "outside-localization");
+  assert.equal(r.applicability.localization, "out-of-scope");
+  assert.ok(r.applicability.pathway.findings.some(f => /cannot assess/i.test(f.consequence)));
+});
+
+test("special population is not equivalent to serious pathology", () => {
+  const pregnancy = clearSafety(createDemoCase()); pregnancy.pregnant = "present";
+  const infection = clearSafety(createDemoCase()); infection.feverOrSystemicInfection = "present";
+  const rp = evaluateCase(pregnancy), ri = evaluateCase(infection);
+  assert.equal(rp.applicability.pathway.primary, "special-population");
+  assert.equal(ri.applicability.pathway.primary, "serious-pathology");
+  assert.notDeepEqual(rp.applicability.reasons, ri.applicability.reasons);
+  assert.notEqual(rp.applicability.treatment, "out-of-scope",
+    "pregnancy must not be handled like an infection concern");
+  assert.ok(rp.nextSteps.some(x => /obstetric/i.test(x)));
+});
+
+test("paediatric age blocks adult synthesis but keeps safety output", () => {
+  const c = clearSafety(createDemoCase());
+  c.age = { status: "measured", value: 15 };
+  const r = evaluateCase(c);
+  assert.equal(r.applicability.pathway.primary, "special-population");
+  assert.equal(r.applicability.treatment, "out-of-scope");
+  assert.ok(r.nextSteps.some(x => /paediatric|pediatric/i.test(x)));
+  c.urinaryRetention = "present";
+  const emergency = evaluateCase(c);
+  assert.equal(emergency.urgency, "emergency");
+  assert.equal(emergency.applicability.safety, "available",
+    "safety documentation is never withheld by a pathway");
+});
+
+test("neuromuscular disease qualifies examination reliability", () => {
+  const c = clearSafety(createDemoCase());
+  c.neuromuscularDisease = "present";
+  const r = evaluateCase(c);
+  assert.ok(r.applicability.pathway.qualifiesExamReliability);
+  assert.ok(r.applicability.pathway.findings.some(f => /specificity of the neurologic examination/i.test(f.consequence)));
+});
+
+test("serious pathology outranks every other pathway", () => {
+  const c = clearSafety(createDemoCase());
+  c.pregnant = "present"; c.priorLongFusion = "present"; c.cancerWarning = "present";
+  assert.equal(evaluateCase(c).applicability.pathway.primary, "serious-pathology");
+});
+
+
+console.log("\n-- v29.1: registry-driven evidence page --");
+
+test("the evidence page renders from the registry, with no hard-coded cards", () => {
+  const app = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(app.includes("<EvidenceLibrary/>"));
+  assert.ok(!app.includes("literature-grid"), "hard-coded evidence markup must be gone");
+  assert.ok(!app.includes("literature-card"));
+  const lib = readFileSync("components/evidence/EvidenceLibrary.tsx", "utf8");
+  assert.ok(lib.includes("EVIDENCE_REGISTRY"), "the page must read the registry directly");
+});
+
+test("there is exactly one source of truth for evidence metadata", () => {
+  for (const f of ["components/SpineDecisionApp.tsx", "components/evidence/EvidenceLibrary.tsx"]) {
+    const src = readFileSync(f, "utf8");
+    // no component may hardcode a citation string
+    assert.ok(!/citation:\s*"/.test(src), `${f} declares evidence metadata inline`);
+  }
+});
+
+test("every filter domain has a label and every entry has a real domain", () => {
+  const labels = Object.keys(EVIDENCE_DOMAIN_LABELS);
+  for (const [id, e] of Object.entries(EVIDENCE_REGISTRY)) {
+    assert.ok(labels.includes(e.domain), `${id} has domain "${e.domain}" with no filter label`);
+  }
+});
+
+test("unverified entries are visibly marked as pending, not shown as authoritative", () => {
+  const lib = readFileSync("components/evidence/EvidenceLibrary.tsx", "utf8");
+  assert.ok(lib.includes("Pending verification"));
+  assert.ok(/has not been checked against the source document/i.test(lib),
+    "a pending entry must carry an explicit caveat");
+  const pending = Object.values(EVIDENCE_REGISTRY).filter(e => e.verification === "pending");
+  assert.ok(pending.length > 0, "the registry should be honest about what is unverified");
+});
+
+test("every entry declares a verification stage", () => {
+  const stages = ["source-verified","metadata-verified","summary-verified","mapping-verified","pending"];
+  for (const [id, e] of Object.entries(EVIDENCE_REGISTRY)) {
+    assert.ok(stages.includes(e.verification), `${id} has no verification stage`);
+    if (e.verification !== "pending") {
+      assert.ok(e.verifiedOn && e.verifiedBy, `${id} claims verification with no date or reviewer`);
+    }
+  }
+});
+
+test("the evidence page supports search across id, citation and topic", () => {
+  const lib = readFileSync("components/evidence/EvidenceLibrary.tsx", "utf8");
+  assert.ok(lib.includes("type=\"search\""));
+  for (const f of ["e.id", "e.citation", "e.mainFinding", "e.population", "e.studyType"]) {
+    assert.ok(lib.includes(f), `search must cover ${f}`);
+  }
+});
+
+test("case-specific evidence stays capped and conclusion-linked", () => {
+  const c = clearSafety(createDemoCase());
+  for (const rule of evaluateCase(c).ruleTrace) {
+    assert.ok(rule.evidenceIds.length <= 3,
+      `rule ${rule.ruleId} cites ${rule.evidenceIds.length} sources; the synthesis caps at 3`);
+  }
+});
+
+
+console.log("\n-- v29.1: synthesis has no empty sections --");
+
+test("the next-steps card is not rendered when there is nothing to say", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(ui.includes('{(result.nextSteps.length>0||result.nonoperative.length>0)&&<Card title="Prioritized next steps"'),
+    "an empty next-steps card must not render");
+});
+
+test("clinician feedback follows the clinical content", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  const feedback = ui.indexOf('<Card title="Clinician feedback"');
+  const concordance = ui.indexOf('<Card title="Concordance map">');
+  assert.ok(feedback > concordance,
+    "usability capture must not sit between the handoff and the clinical reasoning");
+});
+
+test("the visual suite asserts against empty sections", () => {
+  const vs = readFileSync("scripts/visual-check.mjs", "utf8");
+  assert.ok(/An empty section is a heading with no rendered content/.test(vs));
+  assert.ok(vs.includes("result-subsection"), "the check must cover subsections, not just cards");
+});
+
+test("the visual suite captures every major screen, not just the entry view", () => {
+  const vs = readFileSync("scripts/visual-check.mjs", "utf8");
+  for (const screen of ["01-default-empty","03-demo-loaded","09-synthesis",
+                        "10-evidence-library","12-research-workspace","13-comprehensive"]) {
+    assert.ok(vs.includes(screen), `visual suite must capture ${screen}`);
+  }
+  for (const bp of ["1440","1024","768","390"]) assert.ok(vs.includes(bp));
+});
+
+test("captured screenshots exist for every breakpoint and key screen", () => {
+  for (const bp of ["desktop-1440","tablet-1024","tablet-768","mobile-390"]) {
+    for (const screen of ["01-default-empty","09-synthesis","10-evidence-library"]) {
+      assert.ok(existsSync(`docs/screenshots/${bp}-${screen}.png`),
+        `missing capture ${bp}-${screen}`);
+    }
+  }
 });
 
 console.log(`\n${passed} regression tests passed\n`);

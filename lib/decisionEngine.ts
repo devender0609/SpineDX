@@ -1,3 +1,5 @@
+import { assessPathways } from "./pathways.ts";
+import type { PathwayAssessment } from "./pathways.ts";
 import type { CaseInput, ClinicalStatus, FusionLevelFinding, LevelFinding, LumbarLevel, MotorGrade, Root, Severity, Zone } from "./schema.ts";
 
 export type FindingTone = "critical" | "warning" | "positive" | "neutral" | "info";
@@ -7,7 +9,7 @@ export type ModuleStatus = "available" | "limited" | "unavailable" | "out-of-sco
 export type DecisionOutput = {
   urgency:"emergency"|"urgent"|"routine"|"indeterminate";
   urgencyReason:string;
-  applicability:{ safety:ModuleStatus; localization:ModuleStatus; treatment:ModuleStatus; risk:ModuleStatus; reasons:string[] };
+  applicability:{ safety:ModuleStatus; localization:ModuleStatus; treatment:ModuleStatus; risk:ModuleStatus; reasons:string[]; pathway:PathwayAssessment };
   syndrome:{ clinicianEntered:string; derived:"radiculopathy-supported"|"radiculopathy-partial"|"claudication-supported"|"claudication-partial"|"mixed"|"not-supported"|"indeterminate"; rationale:string[]; conflicts:string[] };
   neurologic:{ severity:"none"|"mild"|"moderate"|"severe"|"indeterminate"; reliability:"high"|"moderate"|"low"|"indeterminate"; rationale:string[] };
   targets:CandidateTarget[];
@@ -239,23 +241,19 @@ function targets(i:CaseInput,sy:ReturnType<typeof syndrome>):TargetResult{
 }
 
 function applicability(i:CaseInput){
-  const reasons:string[]=[];
-  // Clinical scope is governed by an explicit lumbar confirmation, not by a region menu.
-  // "no" and "uncertain" both withhold lumbar localization and treatment output; safety
-  // documentation continues either way.
-  if(i.lumbarScopeConfirmed==="not-assessed") reasons.push("lumbar scope is not confirmed");
-  else if(i.lumbarScopeConfirmed==="no") reasons.push("the assessment is not primarily lumbar/lumbosacral");
-  else if(i.lumbarScopeConfirmed==="uncertain") reasons.push("the primary region is uncertain");
-  const outOfScope=[
-    ["pregnancy",i.pregnant],["cervical/thoracic symptoms",i.cervicalThoracicSymptoms],["neuromuscular disease",i.neuromuscularDisease],["known tumor",i.knownTumor],["known infection",i.knownInfection],["acute fracture",i.acuteFracture],["major deformity",i.majorDeformity],["prior long fusion",i.priorLongFusion],["predominantly axial pain",i.predominantlyAxialPain]
-  ] as [string,ClinicalStatus][];
-  for(const [label,status] of outOfScope) if(isPresent(status)) reasons.push(label);
-  const ageOut=i.age.status==="measured"&&i.age.value!==null&&i.age.value<18; if(ageOut) reasons.push("age under 18 years");
-  const treatment:ModuleStatus=reasons.length?"out-of-scope":"available";
-  const localization:ModuleStatus=reasons.length?"limited":i.imagesReviewed==="present"&&i.levelByLevelDocumented==="present"?"available":"limited";
-  const risk:ModuleStatus=i.proposedProcedure==="not-assessed"||i.proposedProcedure==="none"?"unavailable":"available";
-  return {safety:"available" as ModuleStatus,localization,treatment,risk,reasons};
+  // Pathway classification is delegated so that clinically different situations produce
+  // clinically different behaviour and wording, rather than one generic exclusion.
+  const pw=assessPathways(i);
+  const reasons:string[]=pw.findings.map(f=>f.reason);
+  const treatment:ModuleStatus=pw.blocksTreatmentSynthesis?"out-of-scope":pw.findings.length?"limited":"available";
+  const localization:ModuleStatus=pw.blocksLocalization?"out-of-scope"
+    :pw.findings.length?"limited"
+    :i.imagesReviewed==="present"&&i.levelByLevelDocumented==="present"?"available":"limited";
+  // Safety documentation is NEVER withheld by a pathway: an emergency in a paediatric,
+  // pregnant, or non-lumbar case still needs to be escalated.
+  return {safety:"available" as ModuleStatus,risk:pw.blocksTreatmentSynthesis?"limited" as ModuleStatus:"available" as ModuleStatus,treatment,localization,reasons,pathway:pw};
 }
+
 
 function fusion(i:CaseInput,top:CandidateTarget|undefined):DecisionOutput["fusion"]{
   if(i.proposedProcedure!=="fusion"&&i.proposedProcedure!=="decompression-fusion") return {status:"not-applicable",reasons:[],missing:[]};
@@ -355,6 +353,7 @@ export function evaluateCase(i:CaseInput):DecisionOutput{
   ];
   if(fus.status!=="not-applicable") highlights.push({title:`Fusion factors: ${fus.status.replaceAll("-"," ")}`,detail:[...fus.reasons,...fus.missing.map(x=>`Missing: ${x}`)].join("; ")||"No independent factor documented.",tone:fus.status==="factors-documented"?"info":"neutral",priority:2,ruleId:"FUS-001"});
   const nextSteps:string[]=[];
+  if(app.pathway.nextAction) nextSteps.push(app.pathway.nextAction);
   if(sf.urgency==="emergency") nextSteps.push("Follow the local emergency pathway immediately.");
   else if(sf.urgency==="urgent"||progressionConflict||(neuro.severity==="severe"&&neuro.reliability!=="low")) nextSteps.push("Promptly repeat and reconcile the neurologic examination, progression history, and direct imaging review.");
   if(sf.urgency==="indeterminate") nextSteps.push("Complete the required safety screen before interpreting urgency as routine.");

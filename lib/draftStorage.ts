@@ -21,47 +21,76 @@ export function stripIdentifiers(data: CaseInput): CaseInput {
   return copy;
 }
 
-/** Draft storage is OFF until the clinician explicitly opts in on this browser. */
-export function draftEnabled(): boolean {
-  if (typeof window === "undefined") return false;
-  try { return window.localStorage.getItem(OPTIN_KEY) === "yes"; } catch { return false; }
+/**
+ * Three explicit modes. "session" uses sessionStorage, which the browser clears when the tab
+ * closes — the correct primitive for a shared clinical workstation. "local" uses localStorage
+ * with a 24-hour expiry. "off" writes nothing at all and is the default.
+ */
+export type DraftMode = "off" | "session" | "local";
+
+export function draftMode(): DraftMode {
+  if (typeof window === "undefined") return "off";
+  try {
+    const v = window.localStorage.getItem(OPTIN_KEY);
+    return v === "local" || v === "session" ? v : "off";
+  } catch { return "off"; }
 }
 
-export function setDraftEnabled(on: boolean): void {
+export function setDraftMode(mode: DraftMode): void {
   if (typeof window === "undefined") return;
   try {
-    if (on) window.localStorage.setItem(OPTIN_KEY, "yes");
-    else { window.localStorage.removeItem(OPTIN_KEY); window.localStorage.removeItem(DRAFT_KEY); }
+    if (mode === "off") {
+      window.localStorage.removeItem(OPTIN_KEY);
+      window.localStorage.removeItem(DRAFT_KEY);
+      window.sessionStorage.removeItem(DRAFT_KEY);
+    } else {
+      window.localStorage.setItem(OPTIN_KEY, mode);
+      // switching modes must not leave a copy behind in the other store
+      (mode === "local" ? window.sessionStorage : window.localStorage).removeItem(DRAFT_KEY);
+    }
   } catch { /* storage unavailable */ }
 }
 
+const store = (mode: DraftMode): Storage | null => {
+  if (typeof window === "undefined" || mode === "off") return null;
+  return mode === "session" ? window.sessionStorage : window.localStorage;
+};
+
+/** Retained for call sites that only need to know whether anything is being saved. */
+export const draftEnabled = (): boolean => draftMode() !== "off";
+
 export function saveDraft(data: CaseInput, mode: "rapid" | "comprehensive"): string | null {
-  if (typeof window === "undefined") return null;
-  if (!draftEnabled()) return null;
+  const s = store(draftMode());
+  if (!s) return null;
   try {
     const savedAt = new Date().toISOString();
-    window.localStorage.setItem(DRAFT_KEY, JSON.stringify({ savedAt, mode, data: stripIdentifiers(data) }));
+    s.setItem(DRAFT_KEY, JSON.stringify({ savedAt, mode, data: stripIdentifiers(data) }));
     return savedAt;
   } catch { return null; }
 }
 
 export function loadDraft(): Draft | null {
-  if (typeof window === "undefined") return null;
-  if (!draftEnabled()) return null;
+  const dm = draftMode();
+  const s = store(dm);
+  if (!s) return null;
   try {
-    const raw = window.localStorage.getItem(DRAFT_KEY);
+    const raw = s.getItem(DRAFT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Draft;
     if (!parsed?.data || !parsed?.savedAt) return null;
     // Expire rather than resurrect: a stale draft on a shared workstation is a hazard.
-    if (Date.now() - Date.parse(parsed.savedAt) > DRAFT_TTL_MS) { clearDraft(); return null; }
+    // Session drafts do not need a timer — the browser clears them when the tab closes.
+    if (dm === "local" && Date.now() - Date.parse(parsed.savedAt) > DRAFT_TTL_MS) { clearDraft(); return null; }
     return parsed;
   } catch { return null; }
 }
 
 export function clearDraft(): void {
   if (typeof window === "undefined") return;
-  try { window.localStorage.removeItem(DRAFT_KEY); } catch { /* storage unavailable */ }
+  try {
+    window.localStorage.removeItem(DRAFT_KEY);
+    window.sessionStorage.removeItem(DRAFT_KEY);
+  } catch { /* storage unavailable */ }
 }
 
 /**
@@ -69,7 +98,20 @@ export function clearDraft(): void {
  * text, no identifiers. Collected to support a future usability evaluation. Nothing here
  * licenses a time-saving claim: no such claim has been validated.
  */
-export type UsabilityMetrics = {
+export type FeedbackResponses = {
+  clinicianAgreed: "agree" | "partly" | "disagree" | "unable" | "not-recorded";
+  timeBurden: "saved-time" | "no-difference" | "added-time" | "unable" | "not-recorded";
+  clinicalUsefulness: "identified-useful-issue" | "confirmed-known" | "irrelevant-alert" | "no-contribution" | "unable" | "not-recorded";
+  communication: "handoff-useful" | "handoff-partly-useful" | "handoff-not-useful" | "not-used" | "not-recorded";
+  impact: "changed-urgency" | "changed-localization" | "changed-requested-information" | "changed-treatment-discussion" | "no-change" | "not-assessed";
+};
+
+export const BLANK_FEEDBACK: FeedbackResponses = {
+  clinicianAgreed: "not-recorded", timeBurden: "not-recorded",
+  clinicalUsefulness: "not-recorded", communication: "not-recorded", impact: "not-assessed",
+};
+
+export type UsabilityMetrics = FeedbackResponses & {
   startedAt: string;
   generatedAt: string | null;
   elapsedSeconds: number | null;
@@ -79,7 +121,6 @@ export type UsabilityMetrics = {
   modeSwitches: number;
   blockingAlerts: number;
   importantAlerts: number;
-  clinicianAgreed: "agree" | "partly" | "disagree" | "unable" | "not-recorded";
 };
 
 export function recordMetrics(m: UsabilityMetrics): void {

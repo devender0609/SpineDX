@@ -7,6 +7,19 @@ export type Laterality = "right" | "left" | "bilateral" | "midline" | "not-asses
  * thoracic as selectable options implies those modules exist. Clinical scope is governed by
  * `lumbarScopeConfirmed`.
  */
+export type FusionRationaleFactor =
+  | "dynamic-instability"
+  | "pseudarthrosis"
+  | "revision-destabilization"
+  | "relevant-deformity"
+  | "foraminal-height-restoration"
+  | "anticipated-destabilizing-decompression"
+  | "hardware-failure-or-postoperative-structural"
+  | "other-prespecified"
+  | "insufficient-information";
+
+export type ReviewConfidence = "high" | "moderate" | "low" | "not-entered";
+
 export type PrimaryRegion = "lumbar" | "cervical" | "thoracic" | "multiple" | "nonspinal-uncertain" | "not-assessed";
 export type ScopeConfirmation = "yes" | "no" | "uncertain" | "not-assessed";
 
@@ -218,7 +231,24 @@ export type ReviewerAssessment = {
   additionalTesting: "yes" | "no" | "indeterminate" | "not-entered";
   specialistReviewSupport: "supported" | "not-established" | "unable-to-assess" | "not-entered";
   decompressionTarget: string;
-  fusionRationale: "established" | "possible" | "not-established" | "unable-to-assess" | "not-entered";
+  /**
+   * Factor-based fusion adjudication. Reviewers document which PRESPECIFIED factors they can
+   * see in the record, then answer a separate yes/no/unable question. They are never asked to
+   * select an undefined "established" category, which invited each reviewer to apply a private
+   * threshold and made disagreement uninterpretable.
+   */
+  fusionFactors: FusionRationaleFactor[];
+  fusionFactorsDocumented: "yes" | "no" | "unable-to-assess" | "not-entered";
+  reviewerSpecialty: "not-entered" | "orthopedic-spine" | "neurosurgery" | "pmr" | "radiology" | "app" | "other";
+  reviewerYearsExperience: Measurement;
+  imagesDirectlyReviewed: "yes" | "report-only" | "not-entered";
+  sawAppOutput: "yes" | "no" | "not-entered";
+  sawOutcomes: "yes" | "no" | "not-entered";
+  reviewMinutes: Measurement;
+  confidenceSyndrome: ReviewConfidence;
+  confidenceLocalization: ReviewConfidence;
+  confidenceFusion: ReviewConfidence;
+  missingInformationJudgment: "sufficient" | "insufficient" | "not-entered";
   confidence: Confidence;
   rationale: string;
 };

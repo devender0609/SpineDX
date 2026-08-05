@@ -1,4 +1,11 @@
 export type EvidenceStrength = "high" | "moderate" | "limited" | "consensus";
+export type VerificationStage =
+  | "source-verified"    // publication opened; title, authors, year, identifier confirmed
+  | "metadata-verified"  // population and exclusions confirmed against the source
+  | "summary-verified"   // the app's main-finding summary confirmed not to overstate the source
+  | "mapping-verified"   // evidence-to-rule mapping confirmed appropriate
+  | "pending";           // not checked against source
+
 export type EvidenceDomain =
   | "safety" | "radiculopathy" | "claudication-stenosis" | "examination" | "imaging"
   | "injection" | "decompression" | "fusion" | "revision-postoperative" | "optimization"
@@ -35,7 +42,13 @@ export type EvidenceItem = {
    * because an unverified citation that looks verified is worse than no citation.
    */
   verified: "verified" | "unverified";
+  /**
+   * Granular verification stage. "pending" means the summary has NOT been checked against the
+   * source document and must not be presented as authoritative.
+   */
+  verification: VerificationStage;
   verifiedOn?: string;
+  verifiedBy?: string;
   superseded: false | string;
 };
 
@@ -63,6 +76,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "radiculopathy",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "NASS-LSS": {
@@ -83,6 +97,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "claudication-stenosis",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "ASYMPT-MRI": {
@@ -103,6 +118,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "imaging",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "SLR-DX": {
@@ -123,6 +139,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "examination",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "FORAMEN-GRADE": {
@@ -140,6 +157,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "imaging",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "SPORT-LDH": {
@@ -161,6 +179,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "decompression",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "SPORT-LSS": {
@@ -177,6 +196,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "decompression",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "NORDSTEN-DS": {
@@ -197,6 +217,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "fusion",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "SWEDISH-LSS": {
@@ -213,6 +234,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "fusion",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "NICE-NG59-REDFLAGS": {
@@ -234,7 +256,9 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     domain: "safety",
     evidenceLevel: "National guideline (NICE)",
     verified: "verified",
+    verification: "mapping-verified",
     verifiedOn: "2026-08-04",
+    verifiedBy: "build review",
     superseded: false,
   },
   "GIRFT-CES-PATHWAY": {
@@ -257,7 +281,9 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     domain: "safety",
     evidenceLevel: "National pathway / consensus",
     verified: "verified",
+    verification: "mapping-verified",
     verifiedOn: "2026-08-04",
+    verifiedBy: "build review",
     superseded: false,
   },
   "ACR-LBP": {
@@ -274,6 +300,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "imaging",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "ODI-PSYCH": {
@@ -290,6 +317,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "outcomes",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "PROMIS-VALID": {
@@ -305,6 +333,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "outcomes",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "CROSSED-SLR": {
@@ -324,6 +353,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     evidenceLevel: "Moderate certainty",
     domain: "examination",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "MOTOR-REFLEX-DX": {
@@ -345,6 +375,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     evidenceLevel: "Moderate certainty",
     domain: "examination",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "ESI-EVIDENCE": {
@@ -366,6 +397,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     evidenceLevel: "Moderate certainty for short-term benefit; low for durability",
     domain: "injection",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "SNRB-DX": {
@@ -386,6 +418,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     evidenceLevel: "Low to moderate certainty",
     domain: "injection",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "SMOKING-FUSION": {
@@ -406,6 +439,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     evidenceLevel: "Low to moderate certainty (observational)",
     domain: "optimization",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "GLYCEMIC-SSI": {
@@ -426,6 +460,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     evidenceLevel: "Low to moderate certainty (observational)",
     domain: "optimization",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "BONE-INSTRUMENT": {
@@ -446,6 +481,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     evidenceLevel: "Low to moderate certainty (observational)",
     domain: "optimization",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "OPIOID-OUTCOME": {
@@ -466,6 +502,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     evidenceLevel: "Low certainty (observational)",
     domain: "optimization",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "REVISION-DISEASE": {
@@ -486,6 +523,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     evidenceLevel: "Low to moderate certainty (observational)",
     domain: "revision-postoperative",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "SHARED-DECISION": {
@@ -506,6 +544,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     evidenceLevel: "Moderate certainty for decisional outcomes",
     domain: "implementation-validation",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "TRIPOD-AI": {
@@ -523,6 +562,7 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "implementation-validation",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
   "DECIDE-AI": {
@@ -539,8 +579,24 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     reviewDate: "2026-08-03",
     domain: "implementation-validation",
     verified: "unverified",
+    verification: "pending",
     superseded: false,
   },
+};
+
+export const EVIDENCE_DOMAIN_LABELS: Record<EvidenceDomain, string> = {
+  "safety": "Safety and serious pathology",
+  "radiculopathy": "Radiculopathy",
+  "claudication-stenosis": "Claudication and stenosis",
+  "examination": "Neurologic examination",
+  "imaging": "Imaging",
+  "injection": "Injection",
+  "decompression": "Decompression",
+  "fusion": "Fusion",
+  "revision-postoperative": "Revision and postoperative disease",
+  "optimization": "Optimization",
+  "outcomes": "Outcomes",
+  "implementation-validation": "Implementation and validation",
 };
 
 export const getEvidence = (id: string): EvidenceItem | undefined => EVIDENCE_REGISTRY[id];

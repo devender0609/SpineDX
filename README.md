@@ -1,6 +1,6 @@
-# SpineDx-Tx v29.0
+# SpineDx-Tx v29.1
 
-Package version `0.29.0` · application version `29.0.0` · ruleset `LUMBAR-RULESET-2.0.0`
+Package version `0.29.1` · application version `29.1.0` · ruleset `LUMBAR-RULESET-2.1.0`
 
 A clinician-facing lumbar/lumbosacral clinical–imaging reconciliation prototype.
 
@@ -57,21 +57,31 @@ or more than one relevant level.
 
 ## Drafts
 
-Draft storage is **off until you opt in** on that browser, with a session-only alternative.
-When enabled, free-text and identifier-capable fields are stripped before writing, drafts
-expire after 24 hours, storage status and last-save time are always visible, and a saved draft
-is never restored without pressing Resume. Adjudication data and research notes are never
-written to a draft.
+Three explicit modes, off by default:
+
+- **Do not save** — nothing is written.
+- **This session only** — `sessionStorage`, cleared by the browser when the tab closes.
+- **Local draft, 24 hours** — `localStorage` with expiry enforced on read.
+
+Free text and identifier-capable fields are stripped before writing. Adjudication data and
+research notes are never written. Storage mode and last-save time are always visible, and a
+saved draft is never restored without pressing Resume. See `docs/DRAFT_STORAGE.md`.
 
 Prototype browser storage. Not approved for PHI or shared clinical workstations.
 
 ## Research export
 
-Two explicit options behind a pre-export review that lists the identifying fields currently
-holding data. The **structured de-identified export** actually removes study ID, patient goal,
-case ID, site code, reviewer IDs, rationale, disagreement reason and notes, and omits the
-unfiltered form state entirely. The **full export** requires confirmation and is labelled as
-possibly containing identifiers. Nothing is labelled de-identified unless the code stripped it.
+Two options behind a pre-export review that states what is included, what is removed, what is
+transformed, and the residual risk.
+
+The **identifier-reduced research export** removes direct identifiers, reviewer identifiers,
+case and site IDs, all free text, adjudication notes and patient goals, converts exact dates to
+relative intervals, and omits the unfiltered form state. It is deliberately **not** described as
+de-identified: formal de-identification requires institutional privacy review, and a rare
+finding combination or unusual age may still permit re-identification.
+
+The **full export** requires explicit confirmation and is labelled as possibly containing
+identifiers. See `docs/EXPORT_PRIVACY.md`.
 
 ## Running
 
@@ -88,14 +98,18 @@ production build, then visual checks at 1440 / 1024 / 768 / 390 against a real s
 stops at the first failure. Set `SKIP_VISUAL=1` where no browser is available; it is skipped
 loudly, never silently passed.
 
-On Windows, run `install-v29.0.ps1` from the extracted source folder. It verifies version
+On Windows, run `install-v29.1.ps1` from the extracted source folder. It verifies version
 agreement, syncs the repository, copies the source, then runs install, engine tests,
 regression tests, typecheck and the production build, checking `$LASTEXITCODE` after each.
 It cannot print success after a failure.
 
 ## Documentation
 
-- `docs/V29_0_RELEASE_AUDIT.md` — current release audit and issue table
+- `docs/V29_1_RELEASE_AUDIT.md` — current release audit and issue table
+- `docs/EVIDENCE_VERIFICATION.md` — source-verification report
+- `docs/EXPORT_PRIVACY.md` — export privacy specification
+- `docs/DRAFT_STORAGE.md` — draft storage specification
+- `docs/V29_0_RELEASE_AUDIT.md` — prior release audit
 - `docs/screenshots/` — verified captures at 1440 / 1024 / 768 / 390
 - `docs/V28_4_RELEASE_AUDIT.md` — prior release audit
 - `docs/V28_3_CLINICAL_SAFETY_AUDIT.md` — prior clinical-safety audit

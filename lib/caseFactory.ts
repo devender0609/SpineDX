@@ -95,7 +95,12 @@ export function createDemoCase(): CaseInput {
   return c;
 }
 
-const blankReviewer = (): ReviewerAssessment => ({ reviewerId:"", specialty:"not-entered", syndrome:"not-entered", side:"not-entered", root:"not-entered", level:"not-entered", zone:"not-entered", urgency:"not-entered", additionalTesting:"not-entered", specialistReviewSupport:"not-entered", decompressionTarget:"", fusionRationale:"not-entered", confidence:"not-assessed", rationale:"" });
+const blankReviewer = (): ReviewerAssessment => ({ reviewerId:"", specialty:"not-entered", syndrome:"not-entered", side:"not-entered", root:"not-entered", level:"not-entered", zone:"not-entered", urgency:"not-entered", additionalTesting:"not-entered", specialistReviewSupport:"not-entered", decompressionTarget:"", fusionFactors:[], fusionFactorsDocumented:"not-entered",
+  reviewerSpecialty:"not-entered", reviewerYearsExperience:{status:"not-measured",value:null},
+  imagesDirectlyReviewed:"not-entered", sawAppOutput:"not-entered", sawOutcomes:"not-entered",
+  reviewMinutes:{status:"not-measured",value:null},
+  confidenceSyndrome:"not-entered", confidenceLocalization:"not-entered", confidenceFusion:"not-entered",
+  missingInformationJudgment:"not-entered", confidence:"not-assessed", rationale:"" });
 export function createBlankAdjudication(): AdjudicationRecord {
   return {
     caseId:"", siteCode:"", firstReviewer:blankReviewer(), secondReviewer:blankReviewer(), adjudicated:blankReviewer(), adjudicationMethod:"not-entered", disagreementReason:"", actualTreatment:"", procedurePerformed:"", operativeLevels:"", outcomeVisibleDuringAdjudication:false,

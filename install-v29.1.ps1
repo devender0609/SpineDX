@@ -1,6 +1,6 @@
 #requires -Version 5.1
 <#
-  SpineDx-Tx v29.0 installer.
+  SpineDx-Tx v29.1 installer.
 
   Every npm command is followed by an explicit $LASTEXITCODE check. The success banner is the
   last statement in the script and is unreachable unless install, engine tests, regression
@@ -13,9 +13,9 @@
 
 $ErrorActionPreference = "Stop"
 
-$release          = "v29.0"
-$packageVersion   = "0.29.0"
-$appVersion       = "29.0.0"
+$release          = "v29.1"
+$packageVersion   = "0.29.1"
+$appVersion       = "29.1.0"
 
 $source      = Split-Path -Parent $MyInvocation.MyCommand.Path
 $destination = "C:\Users\dpsingh\Desktop\AI Machine Learning\SpineDx-TX\SpineDX"
@@ -47,6 +47,8 @@ if (-not (Test-Path "$source\lib\evidence.ts"))                { throw "$release
 if (-not (Test-Path "$source\lib\modeProjection.ts"))          { throw "$release mode-projection layer is missing." }
 if (-not (Test-Path "$source\lib\researchExport.ts"))          { throw "$release research-export module is missing." }
 if (-not (Test-Path "$source\lib\rapidRequirements.ts"))       { throw "$release rapid-requirement model is missing." }
+if (-not (Test-Path "$source\lib\pathways.ts"))                { throw "$release pathway classifier is missing." }
+if (-not (Test-Path "$source\components\evidence\EvidenceLibrary.tsx")) { throw "$release evidence library is missing." }
 if (-not (Test-Path "$source\components\SpineDecisionApp.tsx")) { throw "$release application component is missing." }
 if (-not (Test-Path "$source\scripts\engine-tests.mjs"))       { throw "$release engine test suite is missing." }
 if (-not (Test-Path "$source\scripts\regression-tests.mjs"))   { throw "$release regression test suite is missing." }
@@ -81,6 +83,7 @@ Remove-Item "$destination\lib\surrogateEngine.ts" -Force -ErrorAction SilentlyCo
 Remove-Item "$destination\install-v28.2.ps1"      -Force -ErrorAction SilentlyContinue
 Remove-Item "$destination\install-v28.3.ps1"      -Force -ErrorAction SilentlyContinue
 Remove-Item "$destination\install-v28.4.ps1"      -Force -ErrorAction SilentlyContinue
+Remove-Item "$destination\install-v29.0.ps1"      -Force -ErrorAction SilentlyContinue
 Remove-Item "$destination\tsconfig.tsbuildinfo"   -Force -ErrorAction SilentlyContinue
 Remove-Item "$destination\.next" -Recurse -Force  -ErrorAction SilentlyContinue
 
@@ -111,4 +114,4 @@ Write-Host "  regression tests  passed" -ForegroundColor Green
 Write-Host "  TypeScript        passed" -ForegroundColor Green
 Write-Host "  production build  passed" -ForegroundColor Green
 Write-Host ""
-Write-Host "Next: git add -A; git commit -m 'v29.0 rapid motor model, export privacy, opt-in drafts, consolidated UI'; git push origin main"
+Write-Host "Next: git add -A; git commit -m 'v29.1 rapid motor model, export privacy, opt-in drafts, consolidated UI'; git push origin main"
