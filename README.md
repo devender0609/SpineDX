@@ -1,6 +1,6 @@
-# SpineDx-Tx v29.1
+# SpineDx-Tx v30.0
 
-Package version `0.29.1` · application version `29.1.0` · ruleset `LUMBAR-RULESET-2.1.0`
+Package version `0.30.0` · application version `30.0.0` · ruleset `LUMBAR-RULESET-3.0.0`
 
 A clinician-facing lumbar/lumbosacral clinical–imaging reconciliation prototype.
 
@@ -98,14 +98,15 @@ production build, then visual checks at 1440 / 1024 / 768 / 390 against a real s
 stops at the first failure. Set `SKIP_VISUAL=1` where no browser is available; it is skipped
 loudly, never silently passed.
 
-On Windows, run `install-v29.1.ps1` from the extracted source folder. It verifies version
+On Windows, run `install-v30.0.ps1` from the extracted source folder. It verifies version
 agreement, syncs the repository, copies the source, then runs install, engine tests,
 regression tests, typecheck and the production build, checking `$LASTEXITCODE` after each.
 It cannot print success after a failure.
 
 ## Documentation
 
-- `docs/V29_1_RELEASE_AUDIT.md` — current release audit and issue table
+- `docs/V30_0_RELEASE_AUDIT.md` — current release audit and issue table
+- `docs/V29_1_RELEASE_AUDIT.md` — prior release audit
 - `docs/EVIDENCE_VERIFICATION.md` — source-verification report
 - `docs/EXPORT_PRIVACY.md` — export privacy specification
 - `docs/DRAFT_STORAGE.md` — draft storage specification

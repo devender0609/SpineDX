@@ -37,9 +37,13 @@ test("an ungraded limb is reported as not graded, never as 5/5", () => {
   const c = clearSafety(createDemoCase());
   c.rightKneeExtension = "not-tested"; c.rightAnkleDorsiflexion = "not-tested";
   c.rightGreatToeExtension = "not-tested"; c.rightPlantarFlexion = "not-tested";
-  const row = evaluateCase(c).concordance.find(x => x.domain === "Motor examination");
-  assert.ok(row.finding.includes("right not graded"), `got: ${row.finding}`);
-  assert.ok(!/right 5\/5/.test(row.finding), "must not print a fabricated 5/5");
+  const r = evaluateCase(c);
+  const row = r.concordance.find(x => /motor/i.test(x.domain));
+  // the untested side must never be attributed a grade, and the row must disclose the gap
+  assert.ok(!/right\s+\d/.test(row.finding), `ungraded side attributed a grade: ${row.finding}`);
+  assert.equal(r.motor.completeness, "partial-examination");
+  assert.ok(row.finding.includes("4 of 8 myotomes graded"),
+    `the row must disclose how much was graded; got: ${row.finding}`);
 });
 
 test("one-sided motor testing is flagged as an explicit gap", () => {
@@ -501,22 +505,22 @@ test("package, application and installer versions agree", () => {
   const pkg = JSON.parse(readFileSync("package.json", "utf8"));
   const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
   const appVersion = readFileSync("lib/appVersion.ts", "utf8");
-  const installer = readFileSync("install-v29.1.ps1", "utf8");
-  assert.equal(pkg.version, "0.29.1", "package.json version");
-  assert.equal(lock.version, "0.29.1", "package-lock.json version");
-  assert.ok(appVersion.includes('APP_VERSION = "29.1.0"'), "APP_VERSION");
-  assert.ok(installer.includes('$packageVersion   = "0.29.1"'), "installer package version");
-  assert.ok(installer.includes('$appVersion       = "29.1.0"'), "installer app version");
-  assert.ok(installer.includes('$release          = "v29.1"'), "installer release");
+  const installer = readFileSync("install-v30.0.ps1", "utf8");
+  assert.equal(pkg.version, "0.30.0", "package.json version");
+  assert.equal(lock.version, "0.30.0", "package-lock.json version");
+  assert.ok(appVersion.includes('APP_VERSION = "30.0.0"'), "APP_VERSION");
+  assert.ok(installer.includes('$packageVersion   = "0.30.0"'), "installer package version");
+  assert.ok(installer.includes('$appVersion       = "30.0.0"'), "installer app version");
+  assert.ok(installer.includes('$release          = "v30.0"'), "installer release");
 });
 
 test("no stale version strings remain in release-facing files", () => {
-  for (const f of ["README.md", "install-v29.1.ps1", "package.json", "package-lock.json",
+  for (const f of ["README.md", "install-v30.0.ps1", "package.json", "package-lock.json",
                    "lib/appVersion.ts", "scripts/engine-tests.mjs", "scripts/verify.sh"]) {
     const text = readFileSync(f, "utf8");
     // the installer legitimately deletes older installers by name; ignore those lines
-    const lines = text.split("\n").filter(l => !/Remove-Item.*install-v(28\.[234]|29\.0)\.ps1/.test(l));
-    for (const stale of ["v28.2","v28.3","v28.4","v29.0","0.28.2","0.28.3","0.28.4","0.29.0","28.2.0","28.3.0","28.4.0","29.0.0"]) {
+    const lines = text.split("\n").filter(l => !/Remove-Item.*install-v(28\.[234]|29\.[01])\.ps1/.test(l));
+    for (const stale of ["v28.2","v28.3","v28.4","v29.0","v29.1","0.28.2","0.28.3","0.28.4","0.29.0","0.29.1","28.2.0","28.3.0","28.4.0","29.0.0","29.1.0"]) {
       const hit = lines.find(l => l.includes(stale));
       assert.ok(!hit, `${f} still references ${stale}: ${hit}`);
     }
@@ -526,11 +530,11 @@ test("no stale version strings remain in release-facing files", () => {
 test("the old installer is gone and the new one exists", () => {
   assert.ok(!existsSync("install-v28.2.ps1"));
   assert.ok(!existsSync("install-v28.3.ps1"));
-  assert.ok(existsSync("install-v29.1.ps1"));
+  assert.ok(existsSync("install-v30.0.ps1"));
 });
 
 test("the installer runs the full verification chain with exit-code checks", () => {
-  const ps = readFileSync("install-v29.1.ps1", "utf8");
+  const ps = readFileSync("install-v30.0.ps1", "utf8");
   for (const cmd of ["npm install", "npm run test:engine", "npm run test:regression",
                      "npm run typecheck", "npm run build"]) {
     assert.ok(ps.includes(cmd), `installer must run "${cmd}"`);
@@ -640,11 +644,13 @@ test("low-value research warnings stay out of the do-not-miss list", () => {
     "documentation advisories must not compete with clinical conflicts");
 });
 
-test("a severe deficit with limited reliability is surfaced", () => {
+test("a severe deficit with limited reliability is surfaced exactly once", () => {
   const c = clearSafety(createDemoCase());
   c.rightAnkleDorsiflexion = "2"; c.examConfidence = "low";
   const alerts = buildPriorityAlerts(evaluateCase(c), validateCaseInput(c), "comprehensive");
-  assert.ok(alerts.some(a => a.id === "severe-deficit-low-reliability"));
+  const reliability = alerts.filter(a => /reliab/i.test(a.title));
+  assert.equal(reliability.length, 1, `expected one reliability alert, got ${reliability.length}`);
+  assert.equal(reliability[0].id, "motor-reliability");
 });
 
 test("a proposed level without imaging is surfaced as blocking", () => {
@@ -1347,6 +1353,212 @@ test("captured screenshots exist for every breakpoint and key screen", () => {
         `missing capture ${bp}-${screen}`);
     }
   }
+});
+
+
+console.log("\n-- v30.0: canonical motor model --");
+
+test("every view reports the same motor finding", () => {
+  const c = clearSafety(createBlankCase());
+  c.side = "right"; c.rapidMotorScreen = "present";
+  c.rapidMotorFinding = { status: "present", side: "right", suspectedRoot: "L4",
+    testedMovement: "knee-extension", lowestObservedGrade: "4", reliability: "give-way" };
+  const r = evaluateCase(c);
+  const row = r.concordance.find(x => /motor/i.test(x.domain));
+  assert.ok(!/not assessed/i.test(row.finding),
+    `the map said "${row.finding}" while the reasoning recorded a graded finding`);
+  assert.ok(row.finding.includes("knee extension"));
+  assert.ok(r.neurologic.rationale.join(" ").includes("knee extension"));
+  assert.equal(r.motor.completeness, "focused-screen");
+});
+
+test("character of weakness counts as documented reliability", () => {
+  const c = clearSafety(createBlankCase());
+  c.rapidMotorScreen = "present";
+  c.rapidMotorFinding = { status: "present", side: "right", suspectedRoot: "L5",
+    testedMovement: "ankle-dorsiflexion", lowestObservedGrade: "4", reliability: "give-way" };
+  const r = evaluateCase(c);
+  assert.equal(r.motor.reliability, "give-way-inconsistent");
+  assert.ok(r.motor.reliabilityDocumented,
+    "give-way IS reliability information; reporting it as undocumented is self-contradictory");
+  assert.ok(!r.missing.some(x => /reliability is not documented/i.test(x)));
+  assert.ok(!validateCaseInput(c).some(x => x.id === "motor-reliability-missing"));
+});
+
+test("give-way weakness maps to limited localization contribution", () => {
+  const mk = (reliability) => { const c = clearSafety(createBlankCase());
+    c.rapidMotorScreen = "present";
+    c.rapidMotorFinding = { status: "present", side: "right", suspectedRoot: "L5",
+      testedMovement: "ankle-dorsiflexion", lowestObservedGrade: "4", reliability };
+    return evaluateCase(c).motor; };
+  assert.equal(mk("give-way").localizationContribution, "limited");
+  assert.equal(mk("pain-limited").localizationContribution, "limited");
+  assert.equal(mk("objective-reproducible").localizationContribution, "supportive");
+});
+
+test("reliability is raised exactly once", () => {
+  const c = clearSafety(createBlankCase());
+  c.rapidMotorScreen = "present";
+  c.rapidMotorFinding = { status: "present", side: "right", suspectedRoot: "L4",
+    testedMovement: "knee-extension", lowestObservedGrade: "4", reliability: "give-way" };
+  const alerts = buildPriorityAlerts(evaluateCase(c), validateCaseInput(c), "rapid");
+  assert.equal(alerts.filter(a => /reliab/i.test(a.title)).length, 1);
+});
+
+console.log("\n-- v30.0: syndrome calibration --");
+
+const syndromeCase = (mut) => { const c = clearSafety(createBlankCase());
+  c.side = "right"; c.clinicianPhenotype = "radicular"; c.imagesReviewed = "present";
+  c.rapidImagingScreen = "absent"; c.imageQuality = "adequate";
+  mut(c); return evaluateCase(c).syndrome.derived; };
+
+test("leg-dominant pain alone does not establish radiculopathy", () => {
+  const d = syndromeCase(c => { c.legDominantPain = "present";
+    c.dermatomalPain = "absent"; c.straightLegRaise = "negative"; });
+  assert.notEqual(d, "radiculopathy-supported", `got ${d}`);
+});
+
+test("give-way weakness alone does not establish radiculopathy", () => {
+  const d = syndromeCase(c => { c.legDominantPain = "present";
+    c.dermatomalPain = "absent"; c.straightLegRaise = "negative";
+    c.rapidMotorScreen = "present";
+    c.rapidMotorFinding = { status: "present", side: "right", suspectedRoot: "L4",
+      testedMovement: "knee-extension", lowestObservedGrade: "4", reliability: "give-way" }; });
+  assert.equal(d, "radiculopathy-possible",
+    `an unreliable motor finding must not produce a supported conclusion; got ${d}`);
+});
+
+test("reproducible weakness plus dermatomal pain does establish radiculopathy", () => {
+  const d = syndromeCase(c => { c.legDominantPain = "present"; c.dermatomalPain = "present";
+    c.straightLegRaise = "positive"; c.rapidMotorScreen = "present";
+    c.rapidMotorFinding = { status: "present", side: "right", suspectedRoot: "L5",
+      testedMovement: "ankle-dorsiflexion", lowestObservedGrade: "4",
+      reliability: "objective-reproducible" }; });
+  assert.equal(d, "radiculopathy-supported", `got ${d}`);
+});
+
+test("negative SLR with no dermatomal features is recorded as negative evidence", () => {
+  const c = clearSafety(createBlankCase());
+  c.clinicianPhenotype = "radicular"; c.legDominantPain = "present";
+  c.dermatomalPain = "absent"; c.straightLegRaise = "negative";
+  const sy = evaluateCase(c).syndrome;
+  assert.ok(sy.rationale.some(x => /explicit negative/i.test(x)),
+    "explicit negatives must be stated, not silently ignored");
+});
+
+test("claudication without radicular features is not called radiculopathy", () => {
+  const d = syndromeCase(c => { c.clinicianPhenotype = "claudication";
+    c.legDominantPain = "absent"; c.dermatomalPain = "absent"; c.straightLegRaise = "negative";
+    c.standingProvokes = "present"; c.walkingProvokes = "present";
+    c.sittingRelieves = "present"; c.flexionRelieves = "present"; c.bicycleBetter = "present"; });
+  assert.equal(d, "claudication-supported", `got ${d}`);
+});
+
+console.log("\n-- v30.0: synthesis is edited, not repeated --");
+
+test("the same conclusion is not stated twice in the headline panel", () => {
+  const c = clearSafety(createBlankCase());
+  c.side = "right"; c.clinicianPhenotype = "radicular"; c.legDominantPain = "present";
+  c.imagesReviewed = "present"; c.rapidImagingScreen = "absent"; c.imageQuality = "adequate";
+  const titles = evaluateCase(c).highlights.map(h => h.title.toLowerCase());
+  const localization = titles.filter(t => t.includes("localization"));
+  assert.ok(localization.length <= 1,
+    `localization stated ${localization.length} times: ${localization.join(" | ")}`);
+});
+
+test("missing-information entries are de-duplicated", () => {
+  const c = clearSafety(createDemoCase());
+  const missing = evaluateCase(c).missing.map(m => m.toLowerCase());
+  assert.equal(new Set(missing).size, missing.length, "verbatim duplicates in missing list");
+});
+
+console.log("\n-- v30.0: mode state --");
+
+test("there is one canonical activeMode", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(/const activeMode=workflowMode;/.test(ui));
+  assert.ok(ui.includes("modeCopy"), "mode descriptions must derive from the canonical mode");
+});
+
+test("rapid-only copy is gated on the canonical mode", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  // the confirmation count and rapid descriptors must sit behind activeMode==="rapid"
+  assert.ok(/activeMode==="rapid"/.test(ui));
+  assert.ok(!ui.includes('workflowMode==="rapid"&&<div className="rapid-status"'),
+    "mode-specific rendering must not read a second mode variable");
+});
+
+test("product-marketing cards are gone from the active workflow", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  for (const t of ["value-pill", "Save time", "Catch issues"]) {
+    assert.ok(!ui.includes(t), `marketing element "${t}" still renders during assessment`);
+  }
+});
+
+test("mode descriptors match the required wording", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(ui.includes("Focused review"));
+  assert.ok(ui.includes("Safety, syndrome, focused motor, and preliminary imaging reconciliation."));
+  assert.ok(ui.includes("Detailed review"));
+  assert.ok(ui.includes("Full neurologic examination, level-specific imaging, postoperative anatomy"));
+});
+
+
+test("evidence link labels name the destination, never 'Open source'", () => {
+  const lib = readFileSync("components/evidence/EvidenceLibrary.tsx", "utf8");
+  const ev = readFileSync("lib/evidence.ts", "utf8");
+  assert.ok(!/Open source|Open primary source/.test(lib),
+    "'Open source' wrongly implies open access");
+  for (const label of ["View guideline","View PubMed","View DOI record",
+                       "View publisher page","Full text"]) {
+    assert.ok(ev.includes(label), `link label "${label}" missing`);
+  }
+  assert.ok(ev.includes("accessStatus"), "access status must be declarable");
+});
+
+test("only manually verified entries carry structured links", () => {
+  for (const [id, e] of Object.entries(EVIDENCE_REGISTRY)) {
+    if (e.sourceLinks) {
+      assert.notEqual(e.verification, "pending",
+        `${id} has structured links but is pending verification`);
+    }
+  }
+});
+
+
+console.log("\n-- v30.0: navigator and layout --");
+
+test("the step navigator reflows and never scrolls horizontally", () => {
+  const css = readFileSync("app/globals.css", "utf8");
+  // media-query overrides are intentional; only the base declaration must be unique
+  const plain = css.replace(/@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/gs, "");
+  const base = plain.match(/(?<![\w.-])\.stepper\s*\{[^}]*\}/g) ?? [];
+  assert.equal(base.length, 1, `expected one base .stepper declaration, found ${base.length}`);
+  assert.ok(/overflow:visible/.test(base[0]), "the navigator must not be a horizontal scroller");
+  assert.ok(/grid-template-columns:repeat\(6/.test(base[0]));
+  for (const bp of ["1150", "560"]) {
+    // the same max-width may appear in more than one block; scan them all
+    const blocks = [...css.matchAll(new RegExp(`@media\\(max-width:${bp}px\\)\\{`, "g"))]
+      .map(m => css.slice(m.index, m.index + 500));
+    assert.ok(blocks.length > 0, `no ${bp}px breakpoint`);
+    assert.ok(blocks.some(b => /\.stepper\{[^}]*grid-template-columns/.test(b)),
+      `missing navigator reflow at ${bp}px`);
+  }
+});
+
+test("the visual suite checks nested containers, not only the page", () => {
+  const vs = readFileSync("scripts/visual-check.mjs", "utf8");
+  assert.ok(/nested horizontal scroll/.test(vs));
+  assert.ok(/textOverflow === "ellipsis"/.test(vs),
+    "deliberate truncation must not be reported as a defect");
+  for (const w of ["1440", "1280", "1024", "768", "390"]) assert.ok(vs.includes(w), `breakpoint ${w}`);
+});
+
+test("mode toggle vocabulary agrees with the step-card vocabulary", () => {
+  const ui = readFileSync("components/SpineDecisionApp.tsx", "utf8");
+  assert.ok(/switchMode\("rapid"\)}>Rapid</.test(ui));
+  assert.ok(/switchMode\("comprehensive"\)}>Comprehensive</.test(ui));
+  assert.ok(ui.includes("Rapid safety screen"), "step cards use the same vocabulary");
 });
 
 console.log(`\n${passed} regression tests passed\n`);

@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
-import { EVIDENCE_REGISTRY, EVIDENCE_DOMAIN_LABELS } from "@/lib/evidence";
+import { EVIDENCE_REGISTRY, EVIDENCE_DOMAIN_LABELS, LINK_LABEL, ACCESS_LABEL } from "@/lib/evidence";
+import type { SourceLinks } from "@/lib/evidence";
 import type { EvidenceDomain, EvidenceItem, VerificationStage } from "@/lib/evidence";
 
 const VERIFICATION_LABEL: Record<VerificationStage, string> = {
@@ -64,7 +65,19 @@ function EvidenceCard({ item }: { item: EvidenceItem }) {
         </dl>
       )}
 
-      <a className="ev-link" href={item.url} target="_blank" rel="noreferrer">Open primary source</a>
+      {/* Labels name the destination; a generic label would wrongly imply open access. */}
+      <div className="ev-links">
+        {item.sourceLinks
+          ? (Object.keys(item.sourceLinks) as (keyof SourceLinks)[])
+              .filter(k => item.sourceLinks?.[k])
+              .map(k => (
+                <a key={k} className="ev-link" href={item.sourceLinks![k]} target="_blank" rel="noreferrer">
+                  {LINK_LABEL[k]}
+                </a>
+              ))
+          : <a className="ev-link" href={item.url} target="_blank" rel="noreferrer">Source record</a>}
+        {item.accessStatus && <span className="ev-access">{ACCESS_LABEL[item.accessStatus]}</span>}
+      </div>
     </article>
   );
 }

@@ -1,4 +1,5 @@
 import { assessPathways } from "./pathways.ts";
+import { summarizeMotor, motorConcordanceText, motorConcordanceStatus, isLimitedReliability } from "./motorSummary.ts";
 import type { PathwayAssessment } from "./pathways.ts";
 import type { CaseInput, ClinicalStatus, FusionLevelFinding, LevelFinding, LumbarLevel, MotorGrade, Root, Severity, Zone } from "./schema.ts";
 
@@ -9,8 +10,9 @@ export type ModuleStatus = "available" | "limited" | "unavailable" | "out-of-sco
 export type DecisionOutput = {
   urgency:"emergency"|"urgent"|"routine"|"indeterminate";
   urgencyReason:string;
+  motor:import("./motorSummary.ts").MotorSummary;
   applicability:{ safety:ModuleStatus; localization:ModuleStatus; treatment:ModuleStatus; risk:ModuleStatus; reasons:string[]; pathway:PathwayAssessment };
-  syndrome:{ clinicianEntered:string; derived:"radiculopathy-supported"|"radiculopathy-partial"|"claudication-supported"|"claudication-partial"|"mixed"|"not-supported"|"indeterminate"; rationale:string[]; conflicts:string[] };
+  syndrome:{ clinicianEntered:string; derived:"radiculopathy-supported"|"radiculopathy-possible"|"radiculopathy-uncertain"|"claudication-supported"|"claudication-partial"|"mixed"|"not-supported"|"indeterminate"; rationale:string[]; conflicts:string[] };
   neurologic:{ severity:"none"|"mild"|"moderate"|"severe"|"indeterminate"; reliability:"high"|"moderate"|"low"|"indeterminate"; rationale:string[] };
   targets:CandidateTarget[];
   highlights:HighlightFinding[];
@@ -93,14 +95,23 @@ function safety(i:CaseInput){
 
 function syndrome(i:CaseInput){
   const rationale:string[]=[]; const conflicts:string[]=[];
-  const symptomDomain=isPresent(i.legDominantPain)||isPresent(i.dermatomalPain);
+  // Leg-dominant pain establishes a leg-dominant presentation, not a radicular one.
+  const dermatomalDomain=isPresent(i.dermatomalPain);
+  const legDominantOnly=isPresent(i.legDominantPain)&&!dermatomalDomain;
+  const symptomDomain=dermatomalDomain||isPresent(i.legDominantPain);
   const tensionDomain=i.straightLegRaise==="positive"||i.femoralStretch==="positive";
-  const motorDomain=i.rapidMotorScreen==="present"||[i.rightKneeExtension,i.leftKneeExtension,i.rightAnkleDorsiflexion,i.leftAnkleDorsiflexion,i.rightGreatToeExtension,i.leftGreatToeExtension,i.rightPlantarFlexion,i.leftPlantarFlexion].some(g=>grade(g)!==null&&grade(g)!<5);
+  // A motor finding counts as a supporting domain only when its reliability supports it.
+  // Give-way, pain-limited, effort-limited and undocumented reliability contribute weakly.
+  const motor=summarizeMotor(i);
+  const motorDomain=motor.localizationContribution==="supportive";
+  const motorWeak=motor.localizationContribution==="limited";
   const sensoryDomain=[i.rightSensoryRoot,i.leftSensoryRoot].some(x=>["L4","L5","S1"].includes(String(x)));
   const reflexDomain=[i.rightPatellarReflex,i.leftPatellarReflex,i.rightAchillesReflex,i.leftAchillesReflex].some(r=>r==="reduced"||r==="absent");
-  if(symptomDomain) rationale.push("radicular symptom phenotype");
+  if(dermatomalDomain) rationale.push("dermatomal pain or paraesthesia");
+  else if(legDominantOnly) rationale.push("leg-dominant pain without a documented dermatomal pattern");
   if(tensionDomain) rationale.push("positive nerve-tension test");
-  if(motorDomain) rationale.push("focal motor abnormality");
+  if(motorDomain) rationale.push("reproducible focal motor abnormality");
+  else if(motorWeak) rationale.push(`focal motor abnormality of limited reliability (${motor.reliabilityText})`);
   if(sensoryDomain) rationale.push("dermatomal sensory finding");
   if(reflexDomain) rationale.push("compatible reflex abnormality");
   const provocation=isPresent(i.standingProvokes)||isPresent(i.walkingProvokes);
@@ -112,15 +123,27 @@ function syndrome(i:CaseInput){
   if(isPresent(i.stoppingAloneRelieves)||isPresent(i.pulsesAbnormal)) conflicts.push("vascular features require review");
   if(isPresent(i.hipExamAbnormal)||isPresent(i.groinPain)) conflicts.push("hip findings may compete with lumbar attribution");
   if(isPresent(i.neuropathyFeatures)) conflicts.push("peripheral neuropathy may compete with root localization");
-  const radSupported=symptomDomain&&(motorDomain||sensoryDomain||reflexDomain||tensionDomain);
-  const radPartial=symptomDomain||motorDomain||sensoryDomain||reflexDomain||tensionDomain;
+  // "Supported" requires at least two independent strong domains, one of them objective.
+  // Symptoms alone do not establish a radiculopathy, and one unreliable motor observation
+  // is not an objective finding.
+  const strongDomains=[dermatomalDomain,tensionDomain,motorDomain,sensoryDomain,reflexDomain].filter(Boolean).length;
+  const objectiveDomain=motorDomain||sensoryDomain||reflexDomain||tensionDomain;
+  const weakSignals=[legDominantOnly,motorWeak].filter(Boolean).length;
+  const tensionNegative=i.straightLegRaise==="negative";
+  const dermatomalNegative=i.dermatomalPain==="absent";
+  const explicitNegatives=[tensionNegative,dermatomalNegative].filter(Boolean).length;
+  const radSupported=strongDomains>=2&&objectiveDomain;
+  const radPossible=!radSupported&&(strongDomains>=1||(legDominantOnly&&weakSignals>=2));
+  const radUncertain=!radSupported&&!radPossible&&(symptomDomain||weakSignals>0);
+  if(explicitNegatives>0&&!radSupported) rationale.push(`explicit negative finding(s): ${[tensionNegative?"negative straight-leg raise":null,dermatomalNegative?"no dermatomal pain":null].filter(Boolean).join(", ")}`);
   const claudSupported=provocation&&relief&&flexionPattern;
   const claudPartial=[provocation,relief,flexionPattern].filter(Boolean).length>=2;
   let derived:DecisionOutput["syndrome"]["derived"]="indeterminate";
   if(radSupported&&claudSupported) derived="mixed";
   else if(radSupported) derived="radiculopathy-supported";
   else if(claudSupported) derived="claudication-supported";
-  else if(radPartial) derived="radiculopathy-partial";
+  else if(radPossible) derived="radiculopathy-possible";
+  else if(radUncertain) derived="radiculopathy-uncertain";
   else if(claudPartial) derived="claudication-partial";
   else if(i.clinicianPhenotype!=="not-assessed") derived="not-supported";
   return { clinicianEntered:i.clinicianPhenotype, derived, rationale, conflicts };
@@ -294,6 +317,7 @@ function risk(i:CaseInput):DecisionOutput["risk"]{
 
 export function evaluateCase(i:CaseInput):DecisionOutput{
   const sf=safety(i); const sy=syndrome(i); const neuro=neurologic(i); const app=applicability(i);
+  const motor=summarizeMotor(i);
   const t=targets(i,sy); const top=t.targets[0];
   const missing=[...sf.missing]; const mimics=[...sy.conflicts];
   const contradictions:string[]=[]; const scopeNotes:string[]=[...t.outOfScope];
@@ -326,7 +350,7 @@ export function evaluateCase(i:CaseInput):DecisionOutput{
   if(i.rapidImagingScreen==="absent") scopeNotes.push("The limited rapid review did not identify a candidate compressive finding. Individual levels and zones were not formally documented as normal.");
   else if(i.levelByLevelDocumented!=="present") missing.push("Potentially relevant levels and zones are not fully documented.");
   if(t.blockedReason) scopeNotes.push(t.blockedReason);
-  if(i.rapidMotorScreen==="present"&&i.examConfidence==="not-assessed") missing.push("Examination reliability is not documented for the recorded motor deficit.");
+  if(motor.recorded&&motor.lowestGrade!==null&&motor.lowestGrade<5&&!motor.reliabilityDocumented) missing.push("Examination reliability is not documented for the recorded motor deficit.");
   if(!i.patientGoal.trim()) missing.push("The patient’s main functional goal is not documented.");
   if(!top&&assessedImagingLevels.length&&!t.blockedReason) missing.push("Repeat side- and root-specific clinical localization because the recorded examination and imaging do not converge on one candidate.");
   const objectiveStrong=neuro.severity==="moderate"||neuro.severity==="severe";
@@ -371,7 +395,7 @@ export function evaluateCase(i:CaseInput):DecisionOutput{
   if(i.priorSurgeryType!=="none"&&i.priorSurgeryType!=="not-assessed") nextSteps.push("Review the prior operative report and current postoperative imaging at the proposed level before finalizing an invasive target.");
   const concordance:DecisionOutput["concordance"]=[
     {domain:"Symptoms",finding:i.side==="not-assessed"?"Laterality not assessed":`${i.side} ${i.clinicianPhenotype} presentation`,status:i.side==="not-assessed"?"missing":"neutral"},
-    {domain:"Motor examination",finding:(right.testedCount===0&&left.testedCount===0)?(i.rapidMotorScreen==="absent"?"No focal motor deficit identified in the rapid screen; myotomes not individually graded":"Not assessed"):`right ${right.min===null?"not graded":`${right.min}/5`}, left ${left.min===null?"not graded":`${left.min}/5`}${bothSidesTested&&deficitSide!=="bilateral or symmetric"?`; strongest recorded deficit ${deficitSide}`:""}`,status:contradictions.some(x=>x.startsWith("Symptoms are"))?"conflict":((right.min!==null&&right.min<5)||(left.min!==null&&left.min<5))?"support":i.rapidMotorScreen==="absent"?"neutral":"missing"},
+    {domain:motor.domainLabel,finding:motorConcordanceText(motor),status:contradictions.some(x=>x.startsWith("Symptoms are"))?"conflict":motorConcordanceStatus(motor)},
     {domain:"Imaging",finding:top?`${top.level} ${top.zone}, ${top.side} ${top.root}`:assessedImagingLevels.length?`Abnormality documented at ${assessedImagingLevels.join(", ")}, but no concordant target`:i.rapidImagingScreen==="absent"?"No potentially relevant compressive finding reported":"No potentially relevant level documented",status:top?"support":assessedImagingLevels.length?"conflict":i.rapidImagingScreen==="absent"?"neutral":"missing"},
     {domain:"Injection",finding:i.injectionResponse==="not-tried"?"No injection performed":i.injectionResponse==="unknown"?"Response unknown":`${i.injectionSide} ${i.injectionLevel}: ${i.injectionResponse==="none"?"no benefit":i.injectionResponse.replaceAll("-"," ")}`,status:contradictions.some(x=>x.toLowerCase().includes("injection"))?"conflict":i.injectionResponse==="unknown"?"missing":"neutral"},
     {domain:"Proposed pathway",finding:i.proposedProcedure==="none"?"No invasive pathway selected":i.proposedProcedure==="not-assessed"?"Not assessed":`${i.proposedProcedure.replaceAll("-"," ")} ${i.proposedLevels.join(", ")||"without a documented level"}`,status:contradictions.some(x=>x.startsWith("The proposed pathway"))?"conflict":i.proposedProcedure==="not-assessed"?"missing":"neutral"},
@@ -411,5 +435,38 @@ export function evaluateCase(i:CaseInput):DecisionOutput{
   }
   if(optIds.length) trace.push({ruleId:"OPT-001",input:"Recorded modifiable perioperative risk factors",conclusion:"Optimization considerations apply to the recorded risk factors. These inform preparation and discussion, not treatment selection.",evidenceIds:optIds,strength:"limited"});
   if(i.priorSurgeryType!=="none"&&i.priorSurgeryType!=="not-assessed") trace.push({ruleId:"REV-001",input:"Prior lumbar surgery",conclusion:"Prior surgery requires review of operative history and postoperative anatomy before a target is advanced.",evidenceIds:["REVISION-DISEASE"],strength:"limited"});
-  return {urgency:progressionConflict?"indeterminate":sf.urgency,urgencyReason:progressionConflict?"Progressive weakness is documented inconsistently across sections.":sf.reason,applicability:app,syndrome:sy,neurologic:neuro,targets:t.targets,highlights,missing:[...new Set(missing)],scopeNotes:[...new Set(scopeNotes)],mimics:[...new Set(mimics)],nextSteps:[...new Set(nextSteps)],nonoperative,specialistReview:specialist,fusion:fus,risk:rk,concordance,ruleTrace:trace};
+  // Synthesis editor. The same conclusion previously appeared as a headline, a next-step, a
+  // limitation and a missing-information item. A physician reading four restatements of one
+  // fact learns to skim, which is exactly when a real conflict gets missed.
+  const normalise=(t:string)=>t.toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+  const dedupe=(items:string[]):string[]=>{
+    const kept:string[]=[]; const seen:string[]=[];
+    for(const item of items){
+      const n=normalise(item);
+      const dup=seen.some(prev=>{
+        if(prev===n) return true;
+        const a=new Set(prev.split(" ")); const b=new Set(n.split(" "));
+        const overlap=[...a].filter(w=>w.length>4&&b.has(w)).length;
+        const smaller=Math.min(a.size,b.size);
+        return smaller>0&&overlap/smaller>=0.75;   // near-duplicate restatement
+      });
+      if(!dup){ kept.push(item); seen.push(n); }
+    }
+    return kept;
+  };
+  // Highlights are compared on the CONCLUSION they state, not on their supporting detail:
+  // "Candidate localization unresolved" and "Next clinical step: localization unresolved" are
+  // one conclusion written twice, even though their details differ.
+  const conclusionWords=(t:string)=>new Set(normalise(t).split(" ").filter(w=>w.length>4&&!["clinical","current","information"].includes(w)));
+  const editedHighlights=highlights.filter((h,idx)=>{
+    const b=conclusionWords(h.title);
+    if(b.size===0) return true;
+    return !highlights.slice(0,idx).some(prev=>{
+      const a=conclusionWords(prev.title);
+      if(a.size===0) return false;
+      const overlap=[...a].filter(w=>b.has(w)).length;
+      return overlap/Math.min(a.size,b.size)>=0.6;
+    });
+  });
+  return {motor,urgency:progressionConflict?"indeterminate":sf.urgency,urgencyReason:progressionConflict?"Progressive weakness is documented inconsistently across sections.":sf.reason,applicability:app,syndrome:sy,neurologic:neuro,targets:t.targets,highlights:editedHighlights,missing:dedupe([...new Set(missing)]),scopeNotes:[...new Set(scopeNotes)],mimics:[...new Set(mimics)],nextSteps:dedupe([...new Set(nextSteps)]),nonoperative,specialistReview:specialist,fusion:fus,risk:rk,concordance,ruleTrace:trace};
 }

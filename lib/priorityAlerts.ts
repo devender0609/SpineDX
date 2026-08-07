@@ -1,5 +1,6 @@
 import type { DecisionOutput } from "./decisionEngine.ts";
 import type { ValidationIssue } from "./validation.ts";
+import { isLimitedReliability } from "./motorSummary.ts";
 
 export type AlertTier = "blocking" | "important" | "advisory";
 export type AlertAction = "Review" | "Edit" | "Confirm" | "Switch to Comprehensive";
@@ -55,6 +56,11 @@ const TIER_ORDER: Record<AlertTier, number> = { blocking: 0, important: 1, advis
  * section — it is a backlog, and clinicians stop reading it. Low-value research and
  * data-quality warnings remain available in the full data-quality panel.
  */
+/** Validator issues already represented by an engine-derived alert. */
+const SUPERSEDED_BY_ENGINE_ALERT: Record<string, string> = {
+  "motor-reliability-missing": "motor-reliability",
+};
+
 export function buildPriorityAlerts(
   result: DecisionOutput,
   issues: ValidationIssue[],
@@ -62,6 +68,7 @@ export function buildPriorityAlerts(
   maxItems = 6,
 ): PriorityAlert[] {
   const alerts: PriorityAlert[] = [];
+  const motor = result.motor;
 
   // --- engine-derived clinical conflicts ------------------------------------------------
   if (result.urgency === "emergency") {
@@ -75,12 +82,17 @@ export function buildPriorityAlerts(
       title: "Expedited assessment supported", detail: result.urgencyReason, domain: "safety" });
   }
 
-  if ((result.neurologic.severity === "severe" || result.neurologic.severity === "moderate") &&
-      (result.neurologic.reliability === "low" || result.neurologic.reliability === "indeterminate")) {
-    alerts.push({ id: "severe-deficit-low-reliability", tier: "important", action: "Confirm",
-      title: "Objective deficit with limited examination reliability",
-      detail: "A moderate or severe deficit is recorded while examination reliability is low or undocumented. Confirm reproducibility before this finding is relied on.",
-      domain: "examination", field: "examConfidence" });
+  // ONE alert per underlying issue. The reliability of a motor finding was previously raised
+  // twice — once from the engine severity and once from the validator — for the same
+  // observation. The alert is now built from the canonical motor summary and the duplicate
+  // validator issue is suppressed below.
+  if (motor.recorded && motor.lowestGrade !== null && motor.lowestGrade < 5 &&
+      (isLimitedReliability(motor.reliability) || !motor.reliabilityDocumented)) {
+    alerts.push({ id: "motor-reliability", tier: "important", action: "Confirm",
+      title: "Motor finding has limited reliability",
+      detail: `${motor.displayText}${motor.reliabilityText ? ` was recorded as ${motor.reliabilityText}` : " was recorded without documented reliability"}. Confirm reproducibility before relying on this finding for localization.`,
+      domain: "examination",
+      field: motor.completeness === "focused-screen" ? "rapidMotorFinding" : "examConfidence" });
   }
 
   if (result.applicability.treatment === "out-of-scope") {
@@ -113,6 +125,8 @@ export function buildPriorityAlerts(
 
   // --- validation-derived conflicts -----------------------------------------------------
   for (const issue of issues) {
+    const supersededBy = SUPERSEDED_BY_ENGINE_ALERT[issue.id];
+    if (supersededBy && alerts.some(a => a.id === supersededBy)) continue;
     const mapped = CLINICAL_ISSUE_TIERS[issue.id]
       ?? (isProposedLevelIssue(issue.id) ? { tier: "blocking" as AlertTier, action: "Edit" as AlertAction } : undefined);
     if (!mapped) continue;
@@ -121,9 +135,15 @@ export function buildPriorityAlerts(
   }
 
   // De-duplicate by title, then sort by tier and cap.
+  // De-duplicate on the underlying issue: same affected field AND same action means the
+  // clinician is being asked to do the same thing twice.
   const seen = new Set<string>();
   return alerts
-    .filter(a => (seen.has(a.title) ? false : (seen.add(a.title), true)))
+    .filter(a => {
+      const key = `${a.field ?? a.domain ?? ""}|${a.action}|${a.tier}`;
+      if (seen.has(a.title) || seen.has(key)) return false;
+      seen.add(a.title); seen.add(key); return true;
+    })
     .sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier])
     .slice(0, maxItems);
 }

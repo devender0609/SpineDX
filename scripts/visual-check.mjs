@@ -3,6 +3,7 @@ import { mkdirSync } from "node:fs";
 
 const BREAKPOINTS = [
   { name: "desktop-1440", width: 1440, height: 900 },
+  { name: "desktop-1280", width: 1280, height: 800 },
   { name: "tablet-1024", width: 1024, height: 768 },
   { name: "tablet-768", width: 768, height: 1024 },
   { name: "mobile-390", width: 390, height: 844 },
@@ -22,6 +23,26 @@ async function assertLayout(page, bp, screen) {
   const scrollX = await page.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth);
   if (bp.width >= 1024 && scrollX > 1) failures.push(`${tag}: horizontal scroll ${scrollX}px`);
+
+  // Nested containers that scroll horizontally at desktop widths. The step navigator must
+  // never require left-right scrolling; page-level checks alone miss this entirely.
+  const nested = await page.evaluate(() => {
+    const bad = [];
+    for (const el of document.querySelectorAll("body *")) {
+      const cs = getComputedStyle(el);
+      // Deliberate single-line truncation is not a layout defect: an ellipsised label
+      // legitimately has scrollWidth > clientWidth.
+      if (cs.textOverflow === "ellipsis" && cs.overflow !== "visible") continue;
+      if (cs.overflow === "hidden" || cs.overflowX === "hidden") continue;
+      if (el.scrollWidth > el.clientWidth + 2 && el.clientWidth > 0) {
+        const cls = (el.className || "").toString().split(" ")[0];
+        bad.push(`${el.tagName.toLowerCase()}.${cls} (+${el.scrollWidth - el.clientWidth}px)`);
+      }
+    }
+    return [...new Set(bad)].slice(0, 5);
+  });
+  if (bp.width >= 1024 && nested.length)
+    failures.push(`${tag}: nested horizontal scroll in ${nested.join(", ")}`);
 
   const overflow = await page.evaluate((vw) => {
     const inScroller = (el) => {

@@ -1,4 +1,23 @@
 export type EvidenceStrength = "high" | "moderate" | "limited" | "consensus";
+/** Structured, typed links. Only populated fields are rendered. */
+export type SourceLinks = {
+  doi?: string; pubmed?: string; guideline?: string; publisher?: string; fullText?: string;
+};
+
+export type AccessStatus =
+  | "open-full-text" | "abstract-only" | "publisher-page" | "guideline-page" | "unknown";
+
+/** Link label must describe the destination — "Open source" wrongly implies open access. */
+export const LINK_LABEL: Record<keyof SourceLinks, string> = {
+  guideline: "View guideline", pubmed: "View PubMed", doi: "View DOI record",
+  publisher: "View publisher page", fullText: "Full text",
+};
+
+export const ACCESS_LABEL: Record<AccessStatus, string> = {
+  "open-full-text": "Open full text", "abstract-only": "Abstract only",
+  "publisher-page": "Publisher page", "guideline-page": "Guideline page", "unknown": "Access unknown",
+};
+
 export type VerificationStage =
   | "source-verified"    // publication opened; title, authors, year, identifier confirmed
   | "metadata-verified"  // population and exclusions confirmed against the source
@@ -49,6 +68,9 @@ export type EvidenceItem = {
   verification: VerificationStage;
   verifiedOn?: string;
   verifiedBy?: string;
+  /** Only manually verified links are populated. */
+  sourceLinks?: SourceLinks;
+  accessStatus?: AccessStatus;
   superseded: false | string;
 };
 
@@ -259,6 +281,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     verification: "mapping-verified",
     verifiedOn: "2026-08-04",
     verifiedBy: "build review",
+    sourceLinks: { guideline: "https://www.nice.org.uk/guidance/ng59" },
+    accessStatus: "guideline-page",
     superseded: false,
   },
   "GIRFT-CES-PATHWAY": {
@@ -284,6 +308,8 @@ export const EVIDENCE_REGISTRY: Record<string, EvidenceItem> = {
     verification: "mapping-verified",
     verifiedOn: "2026-08-04",
     verifiedBy: "build review",
+    sourceLinks: { guideline: "https://www.nice.org.uk/guidance/ng59/resources/interactive-care-pathway-for-cauda-equina-syndrome-15370315021" },
+    accessStatus: "guideline-page",
     superseded: false,
   },
   "ACR-LBP": {

@@ -1,3 +1,4 @@
+import { summarizeMotor } from "./motorSummary.ts";
 import type { CaseInput, ClinicalStatus, LumbarLevel, Measurement } from "./schema.ts";
 
 export type ValidationSeverity = "error" | "warning" | "info";
@@ -67,7 +68,9 @@ export function validateCaseInput(i:CaseInput):ValidationIssue[]{
   if(i.progressiveWeakness==="present"&&allMotor.every(x=>x==="5"||x==="not-tested")) add(issues,{id:"progression-normal-motor",severity:"warning",domain:"examination",title:"Progressive weakness lacks a documented motor deficit",message:"All tested motor grades are normal or not tested.",action:"Clarify whether progression is patient-reported, clinically suspected, or objectively documented."});
 
   const anyAbnormalMotor=[i.rightKneeExtension,i.leftKneeExtension,i.rightAnkleDorsiflexion,i.leftAnkleDorsiflexion,i.rightGreatToeExtension,i.leftGreatToeExtension,i.rightPlantarFlexion,i.leftPlantarFlexion].some(g=>g!=="not-tested"&&g!=="5");
-  if((i.rapidMotorScreen==="present"||anyAbnormalMotor)&&i.examConfidence==="not-assessed") add(issues,{id:"motor-reliability-missing",severity:"warning",domain:"examination",field:"examConfidence",title:"Motor-deficit reliability is not documented",message:"A focal motor deficit is recorded without examination reliability.",action:"Document whether the finding is reproducible, pain-limited, effort-limited, or uncertain."});
+  // Character of weakness IS reliability information. Recording "give-way" and then reporting
+  // "reliability not documented" for the same finding is self-contradictory.
+  if((i.rapidMotorScreen==="present"||anyAbnormalMotor)&&!summarizeMotor(i).reliabilityDocumented) add(issues,{id:"motor-reliability-missing",severity:"warning",domain:"examination",field:"examConfidence",title:"Motor-deficit reliability is not documented",message:"A focal motor deficit is recorded without examination reliability.",action:"Document whether the finding is reproducible, pain-limited, effort-limited, or uncertain."});
 
   if(i.rapidImagingScreen==="present"&&!i.imagingMatrix.some(l=>[l.central,l.rightRecess,l.leftRecess,l.rightForamen,l.leftForamen].some(s=>s!=="not-graded"&&s!=="none"))) add(issues,{id:"rapid-imaging-detail-missing",severity:"warning",domain:"imaging",title:"Rapid imaging finding lacks level, zone, or severity",message:"A potentially relevant compressive finding is marked present, but no specific abnormality is recorded.",action:"Enter the candidate level, zone, and severity or change the rapid imaging screen."});
   if(i.imagesReviewed!=="present"&&i.imagingMatrix.some(l=>[l.central,l.rightRecess,l.leftRecess,l.rightForamen,l.leftForamen].some(s=>s!=="not-graded")||l.rootDeformation==="present")) add(issues,{id:"images-not-reviewed-details",severity:"warning",domain:"imaging",field:"imagesReviewed",title:"Detailed imaging findings were entered without direct image review",message:"Confirm whether these findings came from the report or direct review.",action:"Document the imaging source accurately."});
