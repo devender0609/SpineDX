@@ -94,6 +94,44 @@ async function assertLayout(page, bp, screen) {
   });
   if (empty.length) failures.push(`${tag}: empty card(s) ${empty.join(", ")}`);
 
+  // control sizing: professional density, no oversized or undersized controls
+  const badSize = await page.evaluate(() => {
+    const bad = [];
+    for (const el of document.querySelectorAll("select,input[type=text],input[type=number],.segmented button")) {
+      const h = el.getBoundingClientRect().height;
+      if (h > 0 && (h > 52 || h < 26)) bad.push(`${el.tagName.toLowerCase()} ${Math.round(h)}px`);
+    }
+    return [...new Set(bad)].slice(0, 4);
+  });
+  if (badSize.length) failures.push(`${tag}: control sizing ${badSize.join(", ")}`);
+
+  // Vertical text collapse: a narrow column forcing one character per line. This is what a
+  // broken table looks like, and no overflow check will ever see it.
+  const squeezed = await page.evaluate(() => {
+    const bad = [];
+    for (const el of document.querySelectorAll("td,th,p,span,b,dd,li")) {
+      if (el.children.length) continue;
+      const t = (el.textContent || "").trim();
+      if (t.length < 8) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.width < 60 && r.height > 80) bad.push(t.slice(0, 20));
+    }
+    return [...new Set(bad)].slice(0, 4);
+  });
+  if (squeezed.length) failures.push(`${tag}: text squeezed into a narrow column: ${squeezed.join(", ")}`);
+
+  // labels clipped by their own box (excluding deliberate single-line ellipsis)
+  const clippedText = await page.evaluate(() => {
+    const bad = [];
+    for (const el of document.querySelectorAll(".segmented button,.side-step-label,.alert-body b,.hero-cell dd")) {
+      const cs = getComputedStyle(el);
+      if (cs.textOverflow === "ellipsis") continue;
+      if (el.scrollWidth > el.clientWidth + 2) bad.push((el.textContent || "").slice(0, 18));
+    }
+    return [...new Set(bad)].slice(0, 4);
+  });
+  if (clippedText.length) failures.push(`${tag}: clipped label(s) ${clippedText.join(", ")}`);
+
   const clipped = await page.evaluate(() => {
     let n = 0;
     for (const b of document.querySelectorAll("button")) {
@@ -129,7 +167,7 @@ for (const bp of BREAKPOINTS) {
   // 1. default / empty state, with the draft opt-in bar visible
   await shot(page, bp, "01-default-empty");
 
-  // 2. blocking-error state: a blank case cannot generate
+  // dismiss the draft modal before anything else
   await clickIf(page, /^Do not save$/);
   await shot(page, bp, "02-rapid-orientation");
 

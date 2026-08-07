@@ -1,6 +1,6 @@
-# SpineDx-Tx v30.0
+# SpineDx-Tx v31.0
 
-Package version `0.30.0` · application version `30.0.0` · ruleset `LUMBAR-RULESET-3.0.0`
+Package version `0.31.0` · application version `31.0.0` · ruleset `LUMBAR-RULESET-3.1.0`
 
 A clinician-facing lumbar/lumbosacral clinical–imaging reconciliation prototype.
 
@@ -98,7 +98,7 @@ production build, then visual checks at 1440 / 1024 / 768 / 390 against a real s
 stops at the first failure. Set `SKIP_VISUAL=1` where no browser is available; it is skipped
 loudly, never silently passed.
 
-On Windows, run `install-v30.0.ps1` from the extracted source folder. It verifies version
+On Windows, run `install-v31.0.ps1` from the extracted source folder. It verifies version
 agreement, syncs the repository, copies the source, then runs install, engine tests,
 regression tests, typecheck and the production build, checking `$LASTEXITCODE` after each.
 It cannot print success after a failure.
